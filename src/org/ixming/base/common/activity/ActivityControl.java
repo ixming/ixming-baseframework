@@ -3,8 +3,7 @@ package org.ixming.base.common.activity;
 import java.util.Iterator;
 
 import org.ixming.base.common.BaseApplication;
-
-
+import org.ixming.base.common.LocalBroadcasts;
 
 import android.app.Activity;
 import android.content.Context;
@@ -65,7 +64,7 @@ public class ActivityControl {
 	 */
 	private static void onPrepareStartActivity(ActivityToken token) {
 		Log.d(TAG, "onPrepareStartActivity");
-		BaseApplication.getAppContext().sendBroadcast(
+		LocalBroadcasts.sendLocalBroadcast(
 				new Intent(ACTION_ACTIVITY_EVENTS)
 						.putExtra(EXTRA_TYPE, TYPE_START)
 						.putExtra(EXTRA_ACTIVITY, token.getActivityClass())
@@ -78,7 +77,7 @@ public class ActivityControl {
 	 */
 	private static void onPrepareFinishActivity(ActivityToken token) {
 		Log.d(TAG, "onPrepareStartActivity");
-		BaseApplication.getAppContext().sendBroadcast(
+		LocalBroadcasts.sendLocalBroadcast(
 				new Intent(ACTION_ACTIVITY_EVENTS).putExtra(EXTRA_TYPE,
 						TYPE_FINISH).putExtra(EXTRA_ACTIVITY,
 						token.getActivityClass()));
@@ -89,7 +88,7 @@ public class ActivityControl {
 	 */
 	private static void onActivityTopChanged(ActivityToken token) {
 		Log.d(TAG, "onActivityTopChanged");
-		BaseApplication.getAppContext().sendBroadcast(
+		LocalBroadcasts.sendLocalBroadcast(
 				new Intent(ACTION_ACTIVITY_EVENTS).putExtra(EXTRA_TYPE,
 						TYPE_TOP_CHANGED).putExtra(EXTRA_ACTIVITY,
 						token.getActivityClass()));

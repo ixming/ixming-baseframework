@@ -1,6 +1,6 @@
 package org.ixming.base.utils;
 
-import org.ixming.base.utils.Utils;
+import org.ixming.base.utils.android.Utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;

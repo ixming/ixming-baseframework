@@ -7,7 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 
-import org.ixming.base.utils.FrameworkLog;
+import org.ixming.base.utils.android.FrameworkLog;
 
 
 public class IOUtils {

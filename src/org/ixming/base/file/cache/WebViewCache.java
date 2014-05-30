@@ -19,8 +19,7 @@ import org.ixming.base.file.app.LocalFileUtility;
 import org.ixming.base.network.HttpClientUtil;
 import org.ixming.base.network.HttpRes;
 import org.ixming.base.secure.encode.Base64;
-import org.ixming.base.utils.LogUtils;
-
+import org.ixming.base.utils.android.LogUtils;
 
 import android.annotation.TargetApi;
 import android.os.Build;

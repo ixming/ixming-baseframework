@@ -9,8 +9,8 @@ import java.lang.ref.ReferenceQueue;
 import org.ixming.base.file.FileCompositor;
 import org.ixming.base.file.app.LocalFileUtility;
 import org.ixming.base.taskcenter.async.TaskHandler;
-import org.ixming.base.utils.LogUtils;
-import org.ixming.base.utils.Utils;
+import org.ixming.base.utils.android.LogUtils;
+import org.ixming.base.utils.android.Utils;
 
 import android.content.Context;
 import android.graphics.Bitmap;

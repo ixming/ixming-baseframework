@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.ixming.base.utils.AndroidUtils;
+import org.ixming.base.utils.android.AndroidUtils;
 
 
 import android.content.Context;

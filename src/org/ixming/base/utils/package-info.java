@@ -1,5 +1,5 @@
 /**
- * 本包中是JAVA通用/Android的工具类。
+ * 本包中是JAVA通用的工具类。
  *  
  * @author Yin Yong
  */

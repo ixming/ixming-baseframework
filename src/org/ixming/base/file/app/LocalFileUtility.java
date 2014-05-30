@@ -7,7 +7,6 @@ import org.ixming.base.file.FileManager;
 import org.ixming.base.file.StorageType;
 import org.ixming.base.secure.encode.MD5;
 
-
 import android.text.TextUtils;
 
 /**

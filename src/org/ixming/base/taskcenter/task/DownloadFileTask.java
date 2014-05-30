@@ -6,7 +6,7 @@ import org.ixming.base.file.FileCompositor;
 import org.ixming.base.file.app.LocalFileUtility;
 import org.ixming.base.network.HttpClientUtil;
 import org.ixming.base.taskcenter.entity.ReqFileBean;
-import org.ixming.base.utils.LogUtils;
+import org.ixming.base.utils.android.LogUtils;
 
 
 public class DownloadFileTask extends BaseTask {

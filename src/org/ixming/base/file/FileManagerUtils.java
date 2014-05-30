@@ -9,7 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.ixming.base.utils.LogUtils;
+import org.ixming.base.utils.android.LogUtils;
 
 
 import static org.ixming.base.io.IOUtils.close;

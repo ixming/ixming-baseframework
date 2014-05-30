@@ -5,7 +5,7 @@ import java.util.LinkedList;
 
 import org.ixming.base.common.BaseApplication;
 import org.ixming.base.taskcenter.callback.OnDownloadListener;
-import org.ixming.base.utils.AndroidUtils;
+import org.ixming.base.utils.android.AndroidUtils;
 import org.ixming.basefromwork.R;
 
 import android.graphics.Bitmap;

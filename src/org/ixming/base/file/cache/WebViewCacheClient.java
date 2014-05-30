@@ -1,6 +1,6 @@
 package org.ixming.base.file.cache;
 
-import org.ixming.base.utils.LogUtils;
+import org.ixming.base.utils.android.LogUtils;
 
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
