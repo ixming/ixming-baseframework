@@ -1,16 +1,9 @@
 package org.ixming.base.utils.android;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 
-import org.ixming.base.utils.PreferencesUtils;
-
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.provider.Settings.Secure;
@@ -20,17 +13,16 @@ import android.util.Log;
 
 public class DeviceUuidFactory {
 	private final String LOG_TAG = DeviceUuidFactory.class.getSimpleName();
-	protected static final String PREFS_FILE = "device_uuid.xml";
-	protected static final String PREFS_DEVICE_ID = "device_uuid";
+	protected static final String PREFS_FILE = "device_uuid_file";
+	protected static final String PREFS_VALUE_DEVICE_ID = "device_uuid";
+	protected static final String PREFS_VALUE_MID = "device_mid";
 
 	protected volatile static String uuid = null;
 
 	public DeviceUuidFactory(Context context) {
 		synchronized (DeviceUuidFactory.class) {
 			if (TextUtils.isEmpty(uuid)) {
-				final SharedPreferences prefs = context.getSharedPreferences(
-						PREFS_FILE, 0);
-				uuid = prefs.getString(PREFS_DEVICE_ID, null);
+				uuid = PreferenceUtils.getValue(context, PREFS_FILE, PREFS_VALUE_DEVICE_ID, null);
 
 				if (TextUtils.isEmpty(uuid)) {
 					final String androidId = this.getAndroidId(context);
@@ -75,8 +67,8 @@ public class DeviceUuidFactory {
 								"Cannot find any unique ID for this device, try random ID...");
 						uuid = UUID.randomUUID().toString();
 					}
-					prefs.edit().putString(PREFS_DEVICE_ID, uuid.toString())
-							.commit();
+					
+					PreferenceUtils.saveValue(context, PREFS_FILE, PREFS_VALUE_DEVICE_ID, uuid);
 				}
 			}
 		}
@@ -177,41 +169,15 @@ public class DeviceUuidFactory {
 	 * @return
 	 */
 	private static String mid;
-	private static final String MID_KEY = "MID_KEY";
-
 	public static String getMid(Context context) {
-		// TODO:
-		if (mid == null || "".equals(mid)) {
-			mid = PreferencesUtils
-					.getValueByKey(context, MID_KEY, String.class);
-			if (mid == null || "".equals(mid)) {
-				mid = getMidFromFile(context);
-				if (mid == null || "".equals(mid)) {
-					mid = UUID.randomUUID().toString();
-				}
-				PreferencesUtils.addConfigInfo(context, mid, String.class);
+		if (TextUtils.isEmpty(mid)) {
+			mid = PreferenceUtils.getValue(context, PREFS_FILE, PREFS_VALUE_MID, null);
+			if (TextUtils.isEmpty(mid)) {
+				mid = UUID.randomUUID().toString();
+				PreferenceUtils.saveValue(context, PREFS_FILE, PREFS_VALUE_MID, mid);
 			}
 		}
 		return mid;
 	}
 
-	public static String getMidFromFile(Context context) {
-		String mid = null;
-		File installation = new File(context.getFilesDir(), "VIPS");
-		try {
-			if (!installation.exists()) {
-				FileOutputStream out = new FileOutputStream(installation);
-				out.write(UUID.randomUUID().toString().getBytes());
-				out.close();
-			}
-			RandomAccessFile f = new RandomAccessFile(installation, "rws");
-			byte[] bytes = new byte[(int) f.length()];
-			f.readFully(bytes);
-			f.close();
-			mid = new String(bytes);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return mid;
-	}
 }
