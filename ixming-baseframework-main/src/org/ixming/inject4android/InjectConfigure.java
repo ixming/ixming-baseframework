@@ -14,6 +14,62 @@ package org.ixming.inject4android;
  */
 public class InjectConfigure {
 
+	private static class SpecInjectConfigure extends InjectConfigure {
+		
+		SpecInjectConfigure setToAllInternal(boolean ifInject) {
+			super.setToAll(ifInject);
+			return this;
+		}
+		SpecInjectConfigure injectViewsInternal(boolean ifInject) {
+			super.injectViews(ifInject);
+			return this;
+		}
+		SpecInjectConfigure injectResesInternal(boolean ifInject) {
+			super.injectReses(ifInject);
+			return this;
+		}
+		SpecInjectConfigure injectOnClickMethodsInternal(boolean ifInject) {
+			super.injectOnClickMethods(ifInject);
+			return this;
+		}
+		
+		@Override
+		public InjectConfigure setToAll(boolean ifInject) {
+			throw new UnsupportedOperationException("cannot invoke any 'set' methods");
+		}
+		
+		@Override
+		public InjectConfigure injectViews(boolean ifInject) {
+			throw new UnsupportedOperationException("cannot invoke any 'set' methods");
+		}
+		
+		@Override
+		public InjectConfigure injectReses(boolean ifInject) {
+			throw new UnsupportedOperationException("cannot invoke any 'set' methods");
+		}
+		
+		@Override
+		public InjectConfigure injectOnClickMethods(boolean ifInject) {
+			throw new UnsupportedOperationException("cannot invoke any 'set' methods");
+		}
+	}
+	
+	public static final InjectConfigure InjectViewConfigure;
+	public static final InjectConfigure InjectResConfigure;
+	public static final InjectConfigure InjectOnClickMethodsConfigure;
+	static {
+		InjectViewConfigure = new SpecInjectConfigure()
+			.setToAllInternal(false).injectViewsInternal(true);
+	
+		
+		InjectResConfigure = new SpecInjectConfigure()
+			.setToAllInternal(false).injectResesInternal(true);
+		
+		
+		InjectOnClickMethodsConfigure = new SpecInjectConfigure()
+			.setToAllInternal(false).injectOnClickMethodsInternal(true);
+	}
+	
 	// 设置客户端是否需要动态注入成员变量对应的Res资源
 	private boolean mInjectReses = true;
 	// 设置客户端是否需要动态注入成员变量对应的View

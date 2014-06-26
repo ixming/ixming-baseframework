@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+	all values—— ids, dimens, colors, drawables, i.e.
+	for common use
+ -->
+<resources>
+    <!-- 
+    	common ids
+     -->
+    <item type="id" name="image_key"/>
+    
+</resources>

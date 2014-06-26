@@ -1,8 +1,0 @@
-<resources>
-
-    <string name="app_name">BaseFromwork</string>
-    
-    
-    <!-- a key as ID for setting tag to views in image cache system -->
-	<string name="image_key">image_key</string>
-</resources>

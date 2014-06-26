@@ -3,13 +3,19 @@ package org.ixming.inject4android.core;
 import android.util.SparseArray;
 import android.view.View;
 
+interface IViewFinder {
+
+	View findViewById(int id);
+	
+}
+
 class WrappedViewFinder {
 
 	// 提供查找View的接口
 	private IViewFinder mViewFinder;
 	
 	private final int NONE_PARENT_KEY = 0;
-	// 这些cache只是增加了引用，并没有创建太多小号内存的东西。
+	// 这些cache只是增加了引用，并没有创建太多消耗内存的东西。
 	private SparseArray<View> mParentViewCache;
 	private SparseArray<SparseArray<View>> mChildViewCache;
 	public WrappedViewFinder(IViewFinder viewFinder) {
@@ -17,36 +23,9 @@ class WrappedViewFinder {
 	}
 	
 	public View findViewById(int id, int parentId) {
-		View view;
-    	if (parentId > 0) {
-    		// get parent view from cache first
-    		// then get View from cache
-    		view = findViewByParentId0(id, parentId);
-    	} else {
-    		view = findViewByParentId0(id, NONE_PARENT_KEY);
-    	}
-    	return view;
-	}
-	
-	private View findParentViewById(int parentId) {
-		View parentView = null;
-		if (null != mParentViewCache) {
-			parentView = mParentViewCache.get(parentId);
-		}
-		if (null != parentView) {
-			return parentView;
-		}
-		parentView = findViewByParentId0(parentId, NONE_PARENT_KEY);
-		if (null == parentView) {
-			// 找不到parentId指定的View
-			throw new NullPointerException("cannot find a view by (parentId = 0x"
-					+ Integer.toHexString(parentId) + ")");
-		}
-		if (null == mParentViewCache) {
-			mParentViewCache = new SparseArray<View>();
-		}
-		mParentViewCache.put(parentId, parentView);
-		return parentView;
+		// get parent view from cache first
+		// then get View from cache
+    	return findViewByParentId0(id, parentId > 0 ? parentId : NONE_PARENT_KEY);
 	}
 	
 	private View findViewByParentId0(int id, int parentId) {
@@ -88,12 +67,38 @@ class WrappedViewFinder {
 		if (null == mChildViewCache) {
 			mChildViewCache = new SparseArray<SparseArray<View>>();
 		}
+
 		if (null == childViewCacheOfParent) {
 			childViewCacheOfParent = new SparseArray<View>();
 			mChildViewCache.put(parentId, childViewCacheOfParent);
 		}
 		childViewCacheOfParent.put(id, targetView);
 		return targetView;
+	}
+	
+	/**
+	 * 查找指定的父View
+	 */
+	private View findParentViewById(int parentId) {
+		View parentView = null;
+		if (null != mParentViewCache) {
+			parentView = mParentViewCache.get(parentId);
+		}
+		if (null != parentView) {
+			return parentView;
+		}
+		parentView = findViewByParentId0(parentId, NONE_PARENT_KEY);
+		if (null == parentView) {
+			// 找不到parentId指定的View
+			throw new NullPointerException("cannot find a view by (parentId = 0x"
+					+ Integer.toHexString(parentId) + ")");
+		}
+		// lazy initialization
+		if (null == mParentViewCache) {
+			mParentViewCache = new SparseArray<View>();
+		}
+		mParentViewCache.put(parentId, parentView);
+		return parentView;
 	}
 	
 	@Override

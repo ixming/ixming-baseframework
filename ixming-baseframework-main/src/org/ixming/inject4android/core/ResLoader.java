@@ -41,7 +41,7 @@ class ResLoader {
 	
     public Object loadRes(ResTargetType type, Context context, int id) {
     	checkContext(context, "loadRes<localContext>");
-    	checkId(id, "");
+    	checkId(id, "loadRes<localContext>");
     	try {
     		return type.loadRes(context, id);
 		} catch (Exception e) {

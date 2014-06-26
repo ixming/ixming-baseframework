@@ -8,8 +8,48 @@ import org.ixming.inject4android.annotation.ResInject;
 import org.ixming.inject4android.annotation.ViewInject;
 import org.ixming.inject4android.themed.ThemedResInject;
 
+import android.app.Activity;
 import android.content.Context;
 import android.view.View;
+
+/**
+ * 基于Activity的一个动态注入
+ * @author Yin Yong
+ * @version 1.0
+ */
+class ActivityInjectLoader extends BaseInjectLoader {
+
+	private Activity mContext;
+	public ActivityInjectLoader(Activity context, Context localContext, Context themedContext) {
+		super(localContext, themedContext);
+		this.mContext = context;
+	}
+
+	@Override
+	public View findViewById(int id) {
+		return mContext.findViewById(id);
+	}
+}
+
+/**
+ * 基于RootView的一个动态注入
+ * @author Yin Yong
+ * @version 1.0
+ */
+class ViewInjectLoader extends BaseInjectLoader {
+
+	private View mRootView;
+	public ViewInjectLoader(View rootView, Context localContext, Context themedContext) {
+		super(localContext, themedContext);
+		this.mRootView = rootView;
+	}
+
+	@Override
+	public View findViewById(int id) {
+		return mRootView.findViewById(id);
+	}
+
+}
 
 /**
  * 动态加载的基类，现阶段暂时是加载Res资源和成员变量View
@@ -18,7 +58,7 @@ import android.view.View;
  * @version 1.0
  */
 public abstract class BaseInjectLoader
-implements IViewFinder, IResInjector, IViewInjector, IOnClickListenerInjector {
+implements IViewFinder, IInterfaces {
 	
 	final String TAG = BaseInjectLoader.class.getSimpleName();
 	
@@ -104,6 +144,7 @@ implements IViewFinder, IResInjector, IViewInjector, IOnClickListenerInjector {
 	    			}
 					method.invoke(target, params);
 				} catch (Throwable e) {
+					e.printStackTrace();
 					throw new RuntimeException("invoke onclick method failed: "
 							+ "check the parameters of the method " + method.getName()
 	                		+ ", be sure it's none-param or only a View-class param (we'd supply in code)"
