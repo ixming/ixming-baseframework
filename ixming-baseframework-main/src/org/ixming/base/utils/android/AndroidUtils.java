@@ -1,13 +1,17 @@
 package org.ixming.base.utils.android;
 
 
+import org.ixming.base.common.BaseApplication;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Looper;
 import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
@@ -35,44 +39,42 @@ public class AndroidUtils {
 		return android.os.Build.VERSION.SDK_INT;
 	}
 	
-	// 获取屏幕宽度
-	public static int getDisplayWidth(Context context) {
-		if (sDisplayWidth <= 0) {
-			WindowManager wm = (WindowManager) context.getApplicationContext()
+	private static void getDisplay() {
+		if (sDisplayWidth <= 0 || sDisplayHeight <= 0) {
+			WindowManager wm = (WindowManager) BaseApplication.getAppContext()
 					.getSystemService(Context.WINDOW_SERVICE);
 			DisplayMetrics dm = new DisplayMetrics();
 			wm.getDefaultDisplay().getMetrics(dm);
 			sDisplayWidth = dm.widthPixels;
+			sDisplayHeight = dm.heightPixels;
 		}
+	}
+	// 获取屏幕宽度
+	public static int getDisplayWidth() {
+		getDisplay();
 		return sDisplayWidth;
 	}
 
 	// 获取屏幕高度
-	public static int getDisplayHeight(Context context) {
-		if (sDisplayHeight <= 0) {
-			WindowManager wm = (WindowManager) context.getApplicationContext()
-					.getSystemService(Context.WINDOW_SERVICE);
-			DisplayMetrics dm = new DisplayMetrics();
-			wm.getDefaultDisplay().getMetrics(dm);
-			sDisplayHeight = dm.heightPixels;
-		}
+	public static int getDisplayHeight() {
+		getDisplay();
 		return sDisplayHeight;
 	}
 	
 	/**
 	 * 获取客户端的分辨率
 	 */
-	public static String getDeviceResolution(Context context) {
-		return getDeviceResolution(context, "x");
+	public static String getDeviceResolution() {
+		return getDeviceResolution("x");
 	}
 	/**
 	 * 获取客户端的分辨率
 	 * @param linkMark 连接符，{@link #getDeviceResolution(Context)} 使用的是“x”
 	 */
 	@SuppressLint("DefaultLocale")
-	public static String getDeviceResolution(Context context, String linkMark) {
-		int width = getDisplayWidth(context);
-		int height = getDisplayHeight(context);
+	public static String getDeviceResolution(String linkMark) {
+		int width = getDisplayWidth();
+		int height = getDisplayHeight();
 		return String.format("%d%s%d", width, linkMark, height);
 	}
 	
@@ -81,13 +83,13 @@ public class AndroidUtils {
 	/**
 	 * 返回当前程序版本号
 	 */
-	public static int getAppVersionCode(Context context) {
+	public static int getAppVersionCode() {
 		int versionCode = 0;
 		try {
 			// ---get the package info---
-			PackageManager pm = context.getPackageManager();
+			PackageManager pm = BaseApplication.getAppContext().getPackageManager();
 			// 这里的context.getPackageName()可以换成你要查看的程序的包名
-			PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
+			PackageInfo pi = pm.getPackageInfo(BaseApplication.getAppContext().getPackageName(), 0);
 			versionCode = pi.versionCode;
 		} catch (Exception e) {
 			FrameworkLog.e(TAG, "getAppVersionCode Exception: " + e.getMessage());
@@ -98,15 +100,15 @@ public class AndroidUtils {
 	/**
 	 * 返回当前程序版本名
 	 */
-	public static String getAppVersionName(Context context, String defVersion) {
+	public static String getAppVersionName(String defVersion) {
 		String versionName = defVersion;
 		try {
 			// ---get the package info---
-			PackageManager pm = context.getPackageManager();
+			PackageManager pm = BaseApplication.getAppContext().getPackageManager();
 			// 这里的context.getPackageName()可以换成你要查看的程序的包名
-			PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
+			PackageInfo pi = pm.getPackageInfo(BaseApplication.getAppContext().getPackageName(), 0);
 			versionName = pi.versionName;
-			if (versionName == null || versionName.length() <= 0) {
+			if (null == versionName || versionName.length() <= 0) {
 				return defVersion;
 			}
 		} catch (Exception e) {
@@ -114,7 +116,27 @@ public class AndroidUtils {
 		}
 		return versionName;
 	}
-		
+
+	@SuppressWarnings("unchecked")
+	public static <T>T getMetaData(String key) {
+		try {
+			Context context = BaseApplication.getAppContext();
+			// ---get the package info---
+			PackageManager pm = context.getPackageManager();
+			// 这里的context.getPackageName()可以换成你要查看的程序的包名
+			ApplicationInfo pi = pm.getApplicationInfo(context.getPackageName(), 
+					PackageManager.GET_META_DATA);
+			Bundle metaData = pi.metaData;
+			if (null == metaData) {
+				return null;
+			}
+			return (T) metaData.get(key);
+		} catch (Exception e) {
+			FrameworkLog.e(TAG, "getMetaData Exception: " + e.getMessage());
+			return null;
+		}
+	}
+	
 	/**
 	 * 获得设备识别认证码
 	 * <p/>
@@ -123,9 +145,9 @@ public class AndroidUtils {
 	 * for example, the IMEI for GSM and the MEID or ESN for CDMA phones. 
 	 * Return null if device ID is not available. 
 	 */
-	public static String getIMEI(Context context) {
-		requestPermission(context, android.Manifest.permission.READ_PHONE_STATE);
-		TelephonyManager tm = (TelephonyManager) context
+	public static String getIMEI() {
+		requestPermission(android.Manifest.permission.READ_PHONE_STATE);
+		TelephonyManager tm = (TelephonyManager) BaseApplication.getAppContext()
 				.getSystemService(Context.TELEPHONY_SERVICE);
 		if (tm == null) {
 			return null;
@@ -142,14 +164,13 @@ public class AndroidUtils {
 		if (null == context) {
 			return ;
 		}
-		if (isActivityContext(context)) {
-			context = context.getApplicationContext();
-		}
 		// 系统打电话界面：
 		Intent intent = new Intent();
 		//系统默认的action，用来打开默认的电话界面
 		intent.setAction(Intent.ACTION_DIAL);
-		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		if (!isActivityContext(context)) {
+			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		}
 		//需要拨打的号码
 		intent.setData(Uri.parse("tel:" + number));
 		context.startActivity(intent);
@@ -171,7 +192,6 @@ public class AndroidUtils {
 		Intent intent = new Intent();
 		//系统默认的action，用来打开默认的电话界面
 		intent.setAction(Intent.ACTION_VIEW);
-		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		//需要拨打的号码
 //		intent.setData(Uri.parse("geo:" + lat + "," + lng + "?q=my+street+address"));
 		String uri = "geo:0,0"+ "?q=" + lat + "," + lng;
@@ -185,7 +205,7 @@ public class AndroidUtils {
 					.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 //			context.startActivity(intent);
 		} catch (Exception e) {
-			ToastUtils.showToast(context, "没有合适的应用打开位置信息");
+			ToastUtils.showToast("没有合适的应用打开位置信息");
 		}
 	}
 	
@@ -211,7 +231,7 @@ public class AndroidUtils {
 			context.startActivity(Intent.createChooser(intent, chooserTilte)
 					.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 		} catch (Exception e) {
-			ToastUtils.showToast(context, "没有合适的应用打开链接");
+			ToastUtils.showToast("没有合适的应用打开链接");
 		}
 	}
 	
@@ -238,10 +258,11 @@ public class AndroidUtils {
 	 * 	该方法多在使用某种特定的功能时。
 	 * </p>
 	 */
-	public static void requestPermission(Context context, String permission) {
+	public static void requestPermission(String permission) {
+		Context context = BaseApplication.getAppContext();
 		if (PackageManager.PERMISSION_GRANTED != 
 				context.getPackageManager().checkPermission(permission,
-					context.getPackageName())) {
+						context.getPackageName())) {
 			throw new UnsupportedOperationException(
 					"missing permission \""
 					+ "android.permission.READ_PHONE_STATE "

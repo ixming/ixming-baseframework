@@ -263,6 +263,9 @@ public enum ResTargetType {
     	return true;
     }
     
+    /**
+     * 加载相应的资源
+     */
     public abstract Object loadRes(Context context, int id) ;
     
 }

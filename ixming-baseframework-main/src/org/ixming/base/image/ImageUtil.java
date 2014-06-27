@@ -1,182 +1,343 @@
 package org.ixming.base.image;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import org.ixming.base.file.FileCompositor;
 import org.ixming.base.file.app.LocalFileUtility;
 import org.ixming.base.taskcenter.async.TaskHandler;
 import org.ixming.base.utils.android.LogUtils;
-import org.ixming.base.utils.android.Utils;
 
-import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Bitmap.CompressFormat;
-import android.graphics.Bitmap.Config;
-import android.graphics.BitmapFactory;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
-
 public class ImageUtil {
+	
 	private static final String TAG = ImageUtil.class.getSimpleName();
-
-	private static LruCache<String, Bitmap> imageCache = null;
-	private static ImageUtil instance;
-	public static final int IMAGE_SRC = 1;
-	public static final int IMAGE_BACKGROUND = 2;
+	
+	private static ImageUtil sInstance;
+	private static final Object mSyncToken = new Object();
 
 	public static ImageUtil getInstance() {
-		if (instance == null) {
-			instance = new ImageUtil();
+		synchronized (ImageUtil.class) {
+			if (sInstance == null) {
+				sInstance = new ImageUtil();
+			}
+			return sInstance;
 		}
-		return instance;
 	}
-
-	public static BitmapFactory.Options defaultBitmapOptions() {
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inPreferredConfig = Config.RGB_565;
-		options.inPurgeable = true;
-		options.inInputShareable = true;
-		return options;
+	
+	// >>>>>>>>>>>>>>>>>>>>>
+	// 基于界面
+	static final ReferenceQueue<Bitmap> sRefQueue = new ReferenceQueue<Bitmap>();
+	
+	static final WeakHashMapImpl<Object, HashSet<UrlImageCacheToken>> sUICache
+		= new WeakHashMapImpl<Object, HashSet<UrlImageCacheToken>>() {
+		protected void onEntryRemoved(Object key, java.util.HashSet<UrlImageCacheToken> value) {
+			LogUtils.w(TAG, "sUICache onEntryRemoved");
+			ImageUtil.getInstance().clearFromSet(value);
+		}
+	};
+	private Object mCurrentUIToken;
+	public void onActivityCreate(Object uiObj) {
+		synchronized (mSyncToken) {
+			LogUtils.i(TAG, "onActivityCreate !!!");
+			mCurrentUIToken = uiObj;
+			checkUICacheAndGetUrlList(uiObj);
+		}
 	}
-
-	private ImageUtil() {
-		if (imageCache == null) {
-			LogUtils.i("imageCache", "init imageCache");
+	
+	public void onActivityResumed(Object uiObj) {
+		synchronized (mSyncToken) {
+			LogUtils.i(TAG, "onActivityResumed !!!");
+			poll();
+			mCurrentUIToken = uiObj;
+		}
+	}
+	
+	public void onActivityDestoryed(Object uiObj) {
+		synchronized (mSyncToken) {
+			LogUtils.i(TAG, "onActivityDestoryed !!!");
+			poll();
+			clearFromSet(sUICache.remove(uiObj));
+		}
+	}
+	
+	private void clearFromSet(HashSet<UrlImageCacheToken> tokens) {
+		if (null == tokens) {
+			return ;
+		}
+		for (UrlImageCacheToken token : tokens) {
+			token.decrement();
+			if (token.getRefCount() < 1) {
+				removeCacheUrl(token.getUrl());
+			}
+		}
+	}
+	
+	void checkShouldIncrement(UrlImageCacheToken token) {
+		synchronized (mSyncToken) {
+			poll();
+			if (null == mCurrentUIToken) {
+				return ;
+			}
+			HashSet<UrlImageCacheToken> tokenList = checkUICacheAndGetUrlList(mCurrentUIToken);
+			boolean repeated = false;
+			Iterator<UrlImageCacheToken> ite = tokenList.iterator();
+			while (ite.hasNext()) {
+				UrlImageCacheToken t = ite.next();
+				if (t.equals(token)) {
+					if (t != token) {
+						// 如果已经存在了
+						token.setRefCount(t.getRefCount());
+					}
+					repeated = true;
+					break ;
+				}
+			}
+			// 如果没有重复
+			if (!repeated) {
+				token.increment();
+			}
+			tokenList.add(token);
+		}
+	}
+	
+	private HashSet<UrlImageCacheToken> checkUICacheAndGetUrlList(Object uiToken) {
+		HashSet<UrlImageCacheToken> tokenList = sUICache.get(mCurrentUIToken);
+		if (null == tokenList) {
+			tokenList = new HashSet<UrlImageCacheToken>();
+			sUICache.put(mCurrentUIToken, tokenList);
+		}
+		return tokenList;
+	}
+	
+	static void removeUrlImageCacheToken(UrlImageCacheToken token) {
+		synchronized (mSyncToken) {
+			if (sUICache.isEmpty()) {
+				return ;
+			}
+			Iterator<HashSet<UrlImageCacheToken>> iteSet = sUICache.values().iterator();
+			while (iteSet.hasNext()) {
+				HashSet<UrlImageCacheToken> set = iteSet.next();
+				if (null == set || set.isEmpty()) {
+					continue ;
+				}
+				Iterator<UrlImageCacheToken> ite = set.iterator();
+				while (ite.hasNext()) {
+					UrlImageCacheToken t = ite.next();
+					if (t.equals(token)) {
+						ite.remove();
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 如果Bitmap引用已经被回收，则从所有持有该引用的Activity的UrlImageCacheToken列表中移除
+	 */
+    static void poll() {
+    	System.gc();
+    	synchronized (mSyncToken) {
+    		UrlImageCacheToken token;
+    		while ((token = (UrlImageCacheToken) sRefQueue.poll()) != null) {
+    			LogUtils.d(TAG, "poll token = " + token);
+    			removeUrlImageCacheToken(token);
+    			removeCacheUrl(token.getUrl());
+    		}
+    	}
+	}
+	
+	private static LruCache<String, UrlImageCacheToken> sImageCache = null;
+	
+	static {
+		synchronized (mSyncToken) {
+			// 以KB为单位
 			int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
 			int cacheSize = maxMemory / 2;
-			imageCache = new LruCache<String, Bitmap>(cacheSize) {
+			
+			sImageCache = new LruCache<String, UrlImageCacheToken>(cacheSize) {
+				
 				@Override
-				protected int sizeOf(String key, Bitmap value) {
-					int biSize = value.getRowBytes();
-					int hei = value.getHeight();
-					int bitSize = biSize * hei;
-					int rSize = bitSize / 1024;
-					return rSize;
+				protected int sizeOf(String key, UrlImageCacheToken value) {
+					return value.getByteCount() / 1024;
 				}
-
+				
 				@Override
 				protected void entryRemoved(boolean evicted, String key,
-						Bitmap oldValue, Bitmap newValue) {
-					imageCache.remove(key);
-					new PhantomReference<Bitmap>(oldValue,
-							new ReferenceQueue<Bitmap>());
+						UrlImageCacheToken oldValue, UrlImageCacheToken newValue) {
+					// sImageCache.remove(key);
+					LogUtils.i(TAG, "entryRemoved old = " + oldValue);
 					oldValue = null;
-					System.gc();
-					LogUtils.i("imageCache", "entryRemoved old" + oldValue);
+					poll();
 				}
+				
 			};
 		}
 	}
+	
+	public static final int IMAGE_SRC = 1;
+	public static final int IMAGE_BACKGROUND = 2;
+	private ImageUtil() { }
 
-	private void addCacheUrl(String url, Bitmap bitmap) {
-		if (Utils.isNotNull(url) && imageCache != null && bitmap != null) {
-			synchronized (imageCache) {
-				imageCache.put(url, bitmap);
-			}
-			LogUtils.i("imageCache", "imageCache size--->" + imageCache.size());
-			LogUtils.i("imageCache",
-					"imageCache maxsize--->" + imageCache.maxSize());
-			LogUtils.i("imageCache",
-					"imageCache putCount--->" + imageCache.putCount());
-			LogUtils.i("imageCache", "imageCache evictionCount--->"
-					+ imageCache.evictionCount());
+	UrlImageCacheToken addCacheUrl(String url, Bitmap bitmap) {
+		if (TextUtils.isEmpty(url)) {
+			return null;
 		}
+		if (null == bitmap) {
+			return null;
+		}
+		
+		LogUtils.i("imageCache", "imageCache size--->" + sImageCache.size());
+		LogUtils.i("imageCache",
+				"imageCache maxsize--->" + sImageCache.maxSize());
+		LogUtils.i("imageCache",
+				"imageCache putCount--->" + sImageCache.putCount());
+		LogUtils.i("imageCache", "imageCache evictionCount--->"
+				+ sImageCache.evictionCount());
+		
+		synchronized (mSyncToken) {
+			poll();
+			UrlImageCacheToken token = new UrlImageCacheToken(url, bitmap, sRefQueue);
+			sImageCache.put(url, token);
+			return token;
+		}
+		
 	}
 
+	private static void removeCacheUrl(String url) {
+		if (TextUtils.isEmpty(url)) {
+			return ;
+		}
+		synchronized (mSyncToken) {
+			sImageCache.remove(url);
+		}
+	}
+	
 	public Bitmap getImageCacheBitmap(String key) {
-		if (Utils.isNotNull(key)) {
-			return imageCache.get(key);
+		UrlImageCacheToken token = getImageCacheToken(key);
+		if (null == token) {
+			return null;
 		}
-		return null;
+		return token.get();
+	}
+	
+	UrlImageCacheToken getImageCacheToken(String key) {
+		synchronized (mSyncToken) {
+			if (TextUtils.isEmpty(key)) {
+				return null;
+			}
+			poll();
+			UrlImageCacheToken token = sImageCache.get(key);
+			return token;
+		}
 	}
 
-	/**
-	 * 本地assets下图片
-	 * 
-	 * @param path
-	 * @return
-	 */
-	public Bitmap getBitmapFromAssets(Context context, String path) {
-		Bitmap bitmap = null;
+	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	// local path
+	public void setLocalImageSrc(View view, String path) {
+		ImageDownloadListener listener = ImageDownloadListener.obtain(view, path);
+		listener.setType(IMAGE_SRC);
+		setLocalImage(listener);
+	}
+	
+	public void setLocalImageBackground(View view, String path) {
+		ImageDownloadListener listener = ImageDownloadListener.obtain(view, path);
+		listener.setType(IMAGE_BACKGROUND);
+		setLocalImage(listener);
+	}
+	
+	public void setLocalImage(ImageDownloadListener listener) {
 		try {
-			if (imageCache.get(path) != null) {
-				bitmap = imageCache.get(path);
+			// 避免listView复用导致显示图片错乱 显示前对比url相等才显示
+			// iv.setTag(url);
+			// set default drawable
+			listener.setDefDrawable();
+			// 第一优先级 取内存
+			UrlImageCacheToken token = getImageCacheToken("file://" + listener.getUrl());
+			if (checkTokenHasBitmap(token, listener)) {
+				return ;
 			}
-			if (bitmap == null) {
-//				bitmap = Utils.getBitmapFromAssets(context, path);
+			_loadImageFromFile2(listener);
+		} catch (Exception e) {
+			Log.i(TAG, "setLocalImage Exception:" + e.getMessage());
+			e.printStackTrace();
+			if (null != listener) {
+				listener.onFailed();
+				listener.recycle();
 			}
-			addCacheUrl(path, bitmap);
-		} catch (Exception ex) {
-			ex.printStackTrace();
 		}
-		return bitmap;
 	}
-
+	
+	private void _loadImageFromFile2(ImageDownloadListener listener) throws Exception {
+		// 第二优先级 尝试取本地
+		final Bitmap bmp = BitmapUtils.getBitmapFromFile(listener.getUrl());
+		if (null != bmp) {
+			LogUtils.i(TAG, "_loadImageFromFile2 get bitmap "
+					+ "by sdcard or storage !!!");
+			UrlImageCacheToken token = addCacheUrl("file://" + listener.getUrl(), bmp);
+			if (checkTokenHasBitmap(token, listener)) {
+				return ;
+			}
+		}
+		throw new Exception("cannot load '" + listener.getUrl() + "'");
+	}
+	
+	private boolean checkTokenHasBitmap(UrlImageCacheToken token,
+			ImageDownloadListener listener) {
+		if (null == token) {
+			return false;
+		}
+		if (null == token.get()) {
+			// do nothing
+			return false;
+		} else {
+			listener.onSuccessLoadBitmap(token.get());
+			checkShouldIncrement(token);
+			LogUtils.d(TAG, "setImage get bitmap ref count !!!"
+					+ token.getRefCount());
+			return true;
+		}
+	}
+	
+	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	// URL
 	public void setBackground(View view, String url) {
 		ImageDownloadListener listener = ImageDownloadListener
 				.obtain(view, url).setType(IMAGE_BACKGROUND);
-		setBackground(listener);
+		listener.setType(IMAGE_BACKGROUND);
+		setImage(listener);
 	}
 
 	public void setImageSrc(ImageView imageView, String url) {
 		ImageDownloadListener listener = ImageDownloadListener.obtain(
 				imageView, url).setType(IMAGE_SRC);
-		setImageSrc(listener);
+		listener.setType(IMAGE_SRC);
+		setImage(listener);
 	}
 
 	public void setImage(ImageDownloadListener listener) {
-		_setImage(listener);
-	}
-
-	/**
-	 * @param context
-	 * @param listener
-	 */
-	private void setBackground(ImageDownloadListener listener) {
-		if (null == listener || TextUtils.isEmpty(listener.getUrl())) {
-			return;
-		}
-		listener.setType(IMAGE_BACKGROUND);
-		_setImage(listener);
-	}
-
-	/**
-	 * @param context
-	 * @param listener
-	 */
-	private void setImageSrc(ImageDownloadListener listener) {
-		if (null == listener || TextUtils.isEmpty(listener.getUrl())) {
-			return;
-		}
-		listener.setType(IMAGE_SRC);
-		_setImage(listener);
-	}
-
-	private void _setImage(ImageDownloadListener listener) {
 		try {
 			// // 避免listView复用导致显示图片错乱 显示前对比url相等才显示
 			// iv.setTag(url);
 			// set default drawable
 			listener.setDefDrawable();
 			// 第一优先级 取内存
-			Bitmap bm = getImageCacheBitmap(listener.getUrl());
-			if (null != bm) {
-				LogUtils.i(TAG, "setBackground get bitmap by memory !!!"
-						+ Thread.currentThread().getId());
-				listener.onSuccessLoadBitmap(bm);
+			UrlImageCacheToken token = getImageCacheToken(listener.getUrl());
+			if (checkTokenHasBitmap(token, listener)) {
 				return;
 			}
+			// 第一优先级
 			_loadImageFromFile(listener);
 		} catch (Exception e) {
-			Log.i(TAG, "setImage0 Exception:" + e.getMessage());
+			Log.i(TAG, "setImage Exception:" + e.getMessage());
 			e.printStackTrace();
 			if (null != listener) {
 				listener.onFailed();
@@ -195,13 +356,14 @@ public class ImageUtil {
 				file.deleteFile(true);
 			}
 			// 第二优先级 尝试取本地
-			final Bitmap bmp = getBitmapFromFile(file.getAbsoluteFile());
+			final Bitmap bmp = BitmapUtils.getBitmapFromFile(file.getAbsoluteFile());
 			if (null != bmp) {
-				addCacheUrl(listener.getUrl(), bmp);
 				LogUtils.i(TAG, "_loadImageFromFile get bitmap "
 						+ "by sdcard or storage !!!");
-				listener.onSuccessLoadBitmap(bmp);
-				return;
+				UrlImageCacheToken token = addCacheUrl(listener.getUrl(), bmp);
+				if (checkTokenHasBitmap(token, listener)) {
+					return;
+				}
 			}
 		}
 		// 第三优先级
@@ -215,133 +377,4 @@ public class ImageUtil {
 				LocalFileUtility.IMAGE_FILE_SUFFIX, true, listener);
 	}
 
-	// >>>>>>>>>>>>>>>>>>>>>>>>
-	// static methods
-	public static Bitmap getBitmapFromRes(Context context, int resId) {
-		Bitmap bitmap = null;
-		try {
-			BitmapFactory.Options options = defaultBitmapOptions();
-			bitmap = BitmapFactory.decodeResource(context.getResources(),
-					resId, options);
-		} catch (Exception e) {
-			bitmap = null;
-			LogUtils.e(TAG, "getBitmapFromRes Exception: " + e.getMessage());
-		}
-		return bitmap;
-	}
-
-	public static Bitmap getBitmapFromFileInputStream(FileInputStream is) {
-		if (is == null)
-			return null;
-		Bitmap bitmap = null;
-		try {
-			BitmapFactory.Options options = defaultBitmapOptions();
-			bitmap = BitmapFactory.decodeFileDescriptor(is.getFD(), null,
-					options);
-		} catch (Exception e) {
-			bitmap = null;
-			LogUtils.e(TAG,
-					"getBitmapFromFileInputStream Exception: " + e.getMessage());
-		} finally {
-			if (is != null) {
-				try {
-					is.close();
-				} catch (Exception e) {
-				}
-			}
-		}
-		return bitmap;
-	}
-
-	public static Bitmap getBitmapFromFile(String filePath) {
-		return getBitmapFromFile(new File(filePath));
-	}
-
-	public static Bitmap getBitmapFromFile(File file) {
-		FileInputStream fis;
-		try {
-			fis = new FileInputStream(file);
-			return getBitmapFromFileInputStream(fis);
-		} catch (Exception e) {
-			LogUtils.e(TAG, "getBitmapFromFile Exception: " + e.getMessage());
-			return null;
-		}
-	}
-
-	/**
-	 * 将Bitmap转化为字节数组
-	 * 
-	 * @param bmp
-	 *            target bitmap to read
-	 * @param needRecycle
-	 *            是否需要回收bitmap
-	 * @added 1.0
-	 */
-	public static byte[] bmpToByteArray(final Bitmap bmp,
-			final boolean needRecycle) {
-		if (null == bmp) {
-			return null;
-		}
-		ByteArrayOutputStream output = null;
-		try {
-			output = new ByteArrayOutputStream();
-			bmp.compress(CompressFormat.PNG, 100, output);
-			if (needRecycle) {
-				bmp.recycle();
-			}
-			byte[] result = output.toByteArray();
-			return result;
-		} catch (Exception e) {
-			LogUtils.e(TAG, "bmpToByteArray Exception: " + e.getMessage());
-			return null;
-		} finally {
-			if (null != output) {
-				try {
-					output.close();
-				} catch (Exception ex) {
-				}
-			}
-		}
-	}
-
-	public static byte[] scaleBitmapIfNeededToSize(Bitmap bitmap, long size) {
-		byte[] data = null;
-		try {
-			float width = bitmap.getWidth();
-			float height = bitmap.getHeight();
-			data = bmpToByteArray(bitmap, false);
-			float des = data.length;
-			des = des / size;
-			if (des <= 1) {
-				return data;
-			}
-			final float scale;
-			if (des <= 2.5F) {
-				scale = 0.95F;
-			} else if (des <= 5.0F) {
-				scale = 0.9F;
-			} else if (des <= 7.5F) {
-				scale = 0.85F;
-			} else {
-				scale = 0.8F;
-			}
-			while (true) {
-				if (null == data || data.length <= size) {
-					break;
-				}
-				Bitmap bitmapCopy = bitmap;
-				width *= scale;
-				height *= scale;
-				bitmap = Bitmap.createScaledBitmap(bitmapCopy, (int) width,
-						(int) height, true);
-				bitmapCopy.recycle();
-				data = bmpToByteArray(bitmap, false);
-			}
-		} catch (Exception e) {
-			data = null;
-			LogUtils.e(TAG,
-					"scaleBitmapIfNeededToSize Exception: " + e.getMessage());
-		}
-		return data;
-	}
 }

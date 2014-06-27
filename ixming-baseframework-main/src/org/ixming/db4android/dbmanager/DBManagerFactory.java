@@ -302,10 +302,8 @@ public class DBManagerFactory {
 			if (null == ref || null == (ins = ref.get())) {
 				ins = new DBManager<T>(BaseApplication.getAppContext(), clz);
 				sManagerCache.put(clz, new SoftReference<DBManager<?>>(ins));
-				return (DBManager<T>) ins;
-			} else {
-				return (DBManager<T>) ins;
 			}
+			return (DBManager<T>) ins;
 		}
 	}
 }

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+	all values—— ids, dimens, colors, drawables, i.e.
+	for common use
+ -->
+<resources>
+    <!-- 
+    	common ids
+     -->
+    <item type="id" name="image_key"/>
+    
+    <!-- 
+    	common dimens
+     -->
+    <!-- text sizes -->
+    <dimen name="textsize_10">10sp</dimen>
+    <dimen name="textsize_12">12sp</dimen>
+    <dimen name="textsize_14">14sp</dimen>
+    <dimen name="textsize_16">16sp</dimen>
+    <dimen name="textsize_18">18sp</dimen>
+    <dimen name="textsize_20">20sp</dimen>
+    <dimen name="textsize_22">22sp</dimen>
+    <dimen name="textsize_24">24sp</dimen>
+    <dimen name="textsize_26">26sp</dimen>
+    <dimen name="textsize_28">28sp</dimen>
+    <dimen name="textsize_30">30sp</dimen>
+    
+    <!-- spacing dips -->
+    <dimen name="spacing_0">0dp</dimen>
+    <dimen name="spacing_5">5dp</dimen>
+    <dimen name="spacing_10">10dp</dimen>
+    <dimen name="spacing_15">15dp</dimen>
+    <dimen name="spacing_20">20dp</dimen>
+    <dimen name="spacing_25">25dp</dimen>
+    <dimen name="spacing_30">30dp</dimen>
+    <dimen name="spacing_50">50dp</dimen>
+    <dimen name="spacing_60">60dp</dimen>
+    <dimen name="spacing_70">70dp</dimen>
+    <dimen name="spacing_75">75dp</dimen>
+    <dimen name="spacing_80">80dp</dimen>
+    <dimen name="spacing_90">90dp</dimen>
+    <dimen name="spacing_100">100dp</dimen>
+    <dimen name="spacing_120">120dp</dimen>
+    <dimen name="spacing_150">150dp</dimen>
+    <dimen name="spacing_160">160dp</dimen>
+    <dimen name="spacing_200">200dp</dimen>
+    <dimen name="spacing_320">320dp</dimen>
+    
+    <!-- scroll bar -->
+    <dimen name="scrollbar_radius">1.5dip</dimen>
+    <dimen name="scrollbar_size">3dip</dimen>
+    <dimen name="scrollbar_stroke_v8">3dip</dimen>
+    
+    
+    
+    
+    <!-- 
+    	common colors
+     -->
+    <color name="transparent">#00000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+	<color name="gray">#FF888888</color>
+    <color name="dark_gray">#FF444444</color>
+    <color name="light_gray">#FFCCCCCC</color>
+
+    <!-- useful testing colors -->
+    <color name="black_alpha44">#44000000</color>
+    <color name="color_88888888">#88888888</color>
+    
+    <!-- 通用的根布局背景颜色 -->
+    <color name="rootlayout_bg">#FFfbeaea</color>
+    <!-- 通用的bar颜色，比如tab，scroll bar，title bar等 -->
+    <color name="basebar_bg">#FF35B886</color>
+    <color name="scrollbar_bg">#FF35B886</color>
+    
+    
+    
+    <!-- 
+    	common drawable 
+    -->
+    <drawable name="white">#FFFFFFFF</drawable>
+    <drawable name="black">#FF000000</drawable>
+    <drawable name="gray">#FF888888</drawable>
+    <drawable name="dark_gray">#FF444444</drawable>
+    <drawable name="light_gray">#FFCCCCCC</drawable>
+    
+    <drawable name="black_alpha44">#44000000</drawable>
+    <drawable name="color_88888888">#88888888</drawable>
+    
+</resources>

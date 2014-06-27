@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+	all values—— ids, dimens, colors, drawables, styles, i.e.
+	for title bar as common properties
+ -->
+<resources>
+    <!-- ids for title bar -->
+    <item type="id" name="common_titlebar"/>
+    
+    
+    <!-- dimens for title bar -->
+    <dimen name="titlebar_container_hpadding">0dp</dimen>
+    <dimen name="titlebar_container_vpadding">0dp</dimen>
+    <dimen name="titlebar_height">50dp</dimen>
+    
+    <!-- colors for title bar -->
+    
+    <!-- drawables for title bar -->
+    <drawable name="titlebar_bg">#FF456789</drawable>
+    
+    
+    <!-- title bar 相关的style -->
+    <style name="TitleBar"/>
+    <style name="TitleBar.Container">
+        <item name="android:id">@id/common_titlebar</item>
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">@dimen/titlebar_height</item>
+        <item name="android:layout_alignParentTop">true</item>
+        <item name="android:background">@drawable/titlebar_bg</item>
+        <item name="android:paddingLeft">@dimen/titlebar_container_hpadding</item>
+        <item name="android:paddingRight">@dimen/titlebar_container_hpadding</item>
+        <item name="android:paddingTop">@dimen/titlebar_container_vpadding</item>
+        <item name="android:paddingBottom">@dimen/titlebar_container_vpadding</item>
+    </style>
+</resources>

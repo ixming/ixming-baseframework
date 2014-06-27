@@ -71,7 +71,7 @@ public class ImageDownloadListener implements OnDownloadListener {
 		}
 	}
 
-	/* package */ImageDownloadListener setType(int type) {
+	public ImageDownloadListener setType(int type) {
 		mType = type;
 		return this;
 	}
@@ -80,7 +80,7 @@ public class ImageDownloadListener implements OnDownloadListener {
 		mViewRef = new WeakReference<View>(view);
 		mUrl = url;
 		synchronized (view) {
-			view.setTag(R.string.image_key, mUrl);
+			view.setTag(R.id.image_key, mUrl);
 		}
 		return this;
 	}
@@ -115,9 +115,9 @@ public class ImageDownloadListener implements OnDownloadListener {
 			return;
 		}
 		synchronized (view) {
-			String tag = (String) view.getTag(R.string.image_key);
+			String tag = (String) view.getTag(R.id.image_key);
 			if (mUrl.equals(tag)) {
-				Bitmap bm = ImageUtil.getBitmapFromFile(path);
+				Bitmap bm = BitmapUtils.getBitmapFromFile(path);
 				onSuccessLoadBitmap(bm);
 			}
 		}
@@ -167,7 +167,7 @@ public class ImageDownloadListener implements OnDownloadListener {
 			return;
 		}
 		synchronized (view) {
-			String tag = (String) view.getTag(R.string.image_key);
+			String tag = (String) view.getTag(R.id.image_key);
 			if (url.equals(tag)) {
 				setImageToView(view, defDrawable, mType);
 			}
@@ -199,7 +199,7 @@ public class ImageDownloadListener implements OnDownloadListener {
 			return;
 		}
 		synchronized (view) {
-			String tag = (String) view.getTag(R.string.image_key);
+			String tag = (String) view.getTag(R.id.image_key);
 			if (url.equals(tag)) {
 				onSuccess(view, bm);
 				recycle();

@@ -1,6 +1,5 @@
 package org.ixming.base.common.activity;
 
-
 import org.ixming.base.image.ImageUtil;
 import org.ixming.inject4android.InjectConfigure;
 import org.ixming.inject4android.InjectorUtils;
@@ -10,30 +9,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.FragmentActivity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 
-/**
- * 基本的Activity，它规定了代码的一些格式，需要相应的遵循，使得结构相对清晰。
- */
-public abstract class BaseActivity extends Activity implements ILocalActivity {
-
+public abstract class BaseFragmentActivity extends FragmentActivity implements ILocalActivity {
+	
 	private ActivityControl mActivityControl = ActivityControl.getInstance();
 	private View mRootView;
 	protected Context context;
 	protected Context appContext;
 	protected Handler handler;
-
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		mActivityControl.onActivityCreate(this, getIntent());
 		ImageUtil.getInstance().onActivityCreate(this);
+		
 		super.onCreate(savedInstanceState);
 		context = this;
 		appContext = getApplicationContext();
 		handler = provideActivityHandler();
-		
 		mRootView = LayoutInflater.from(this).inflate(provideLayoutResId(), null);
 		setContentView(mRootView);
 		
@@ -45,7 +42,6 @@ public abstract class BaseActivity extends Activity implements ILocalActivity {
 		initView(mRootView);
 		prepareInitData(mRootView, savedInstanceState);
 		initData(mRootView, savedInstanceState);
-		
 		initListener();
 	}
 
@@ -150,12 +146,12 @@ public abstract class BaseActivity extends Activity implements ILocalActivity {
 	}
 
 	@Override
-	public BaseActivity bindClickListener(int resId) {
+	public BaseFragmentActivity bindClickListener(int resId) {
 		return bindClickListener(findViewById(resId));
 	}
 
 	@Override
-	public BaseActivity bindClickListener(View view) {
+	public BaseFragmentActivity bindClickListener(View view) {
 		if (null != view) {
 			view.setOnClickListener(this);
 		}
@@ -163,12 +159,12 @@ public abstract class BaseActivity extends Activity implements ILocalActivity {
 	}
 
 	@Override
-	public BaseActivity removeClickListener(int resId) {
+	public BaseFragmentActivity removeClickListener(int resId) {
 		return removeClickListener(findViewById(resId));
 	}
 
 	@Override
-	public BaseActivity removeClickListener(View view) {
+	public BaseFragmentActivity removeClickListener(View view) {
 		if (null != view) {
 			view.setOnClickListener(null);
 		}

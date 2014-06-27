@@ -1,21 +1,13 @@
 package org.ixming.base.utils.android;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
 
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
-import android.graphics.Bitmap.Config;
-import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.telephony.TelephonyManager;
@@ -28,8 +20,6 @@ import android.widget.EditText;
 
 public class Utils {
 	private static final String TAG = Utils.class.getSimpleName();
-	private static int displayWidth = 0;
-	private static int displayHeight = 0;
 	private static String DEVICE_ID = null;
 	static InputMethodManager inputMethodManager;
 

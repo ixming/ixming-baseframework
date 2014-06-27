@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.ixming.base.utils.android.AndroidUtils;
+import org.ixming.inject4android.InjectConfigure;
+import org.ixming.inject4android.InjectorUtils;
 
 
 import android.content.Context;
@@ -295,5 +297,14 @@ implements AdapterChangeable<D>{
 			postDataSetChanged(oldCount, newCount);
 		}
 		return this;
+	}
+	
+	protected void injectView(Object target, View contentView) {
+		InjectorUtils.instanceBuildFrom(InjectConfigure.InjectViewConfigure).inject(target, contentView);
+	}
+	
+	protected void injectRes(Object target) {
+		InjectorUtils.instanceBuildFrom(InjectConfigure.InjectResConfigure)
+			.inject(target, null, getContext());
 	}
 }

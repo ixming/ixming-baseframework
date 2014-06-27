@@ -10,12 +10,13 @@ import android.view.View;
  * it recommends here
  * @version 1.0
  */
-interface ILocalActivity extends View.OnClickListener {
+interface ILocalActivity extends IControlledActivity, IInjectableActivity,
+View.OnClickListener {
 
 	/**
 	 * define the layout res of the activity
 	 */
-	int getLayoutResId();
+	int provideLayoutResId();
 	
 	/**
 	 * called before {@link #initData(View, android.os.Bundle)} while
@@ -28,12 +29,6 @@ interface ILocalActivity extends View.OnClickListener {
 	void initView(View view);
 	
 	/**
-	 * initView 之后，initData之前被调用
-	 * @added 1.0
-	 */
-	void initListener();
-	
-	/**
 	 * called immediately after {@link #initView(View)} while
 	 * {@link Activity#onCreated(android.os.Bundle)} is running
 	 * 
@@ -42,6 +37,12 @@ interface ILocalActivity extends View.OnClickListener {
      * a previous saved state, this is the state.
 	 */
 	void initData(View view, Bundle savedInstanceState) ;
+	
+	/**
+	 * initView, initData之后被调用
+	 * @added 1.0
+	 */
+	void initListener();
 	
 	/**
 	 * this method returns the pure View.

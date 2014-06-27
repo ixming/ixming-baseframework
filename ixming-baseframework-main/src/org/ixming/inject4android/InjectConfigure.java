@@ -54,10 +54,30 @@ public class InjectConfigure {
 		}
 	}
 	
+	/**
+	 * 注入所有
+	 */
+	public static final InjectConfigure InjectAllConfigure;
+	
+	/**
+	 * 只注入View的配置
+	 */
 	public static final InjectConfigure InjectViewConfigure;
+	
+	/**
+	 * 只注入资源的配置
+	 */
 	public static final InjectConfigure InjectResConfigure;
+
+	/**
+	 * 只注入Click监听器的配置
+	 */
 	public static final InjectConfigure InjectOnClickMethodsConfigure;
 	static {
+		InjectAllConfigure = new SpecInjectConfigure()
+			.setToAllInternal(true);
+		
+		
 		InjectViewConfigure = new SpecInjectConfigure()
 			.setToAllInternal(false).injectViewsInternal(true);
 	

@@ -8,7 +8,7 @@ import android.content.ContentValues;
 
 /**
  * if you want to update some data, you'd determine the specific fields you'd modify,
- * use this class to put names and values of bean's field to ContentValues
+ * use this class to put names and values of bean's fields to ContentValues
  * 
  * <p>
  * 如果想要更新（Update,delete）表中的信息——又不需要更新所有的字段，或者调用处知道Bean中包含的字段可能不全，

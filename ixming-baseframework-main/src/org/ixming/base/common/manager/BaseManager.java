@@ -42,7 +42,7 @@ public abstract class BaseManager implements OnLoadListener {
 		if (TextUtils.isEmpty(arg)) {
 			return;
 		}
-		ToastUtils.showToast(appContext, handler, arg);
+		ToastUtils.showToast(arg);
 	}
 
 	public void toastShow(final int resId) {

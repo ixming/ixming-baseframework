@@ -41,6 +41,11 @@ public class LocalFileUtility {
 		return getFileByName0(FILE_TMP_PATH, null, transferUrl(url, suffix));
 	}
 	
+	public static FileCompositor getDir(String dir) {
+		dir = comFileParentDir(FILE_PATH, dir);
+		return FileCompositor.obtainDir(dir);
+	}
+	
 	public static FileCompositor getFileByName(String dir, String fileName) {
 		return getFileByName0(FILE_PATH, dir, fileName);
 	}

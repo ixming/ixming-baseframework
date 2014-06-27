@@ -2,6 +2,8 @@ package org.ixming.base.utils.android;
 
 import java.lang.ref.WeakReference;
 
+import org.ixming.base.common.BaseApplication;
+
 
 import android.content.Context;
 import android.os.Handler;
@@ -22,103 +24,58 @@ public class ToastUtils {
 		if (null == mToastRef || null == (temp = mToastRef.get())) {
 			mToastRef = new WeakReference<Toast>(Toast.makeText(context, "", Toast.LENGTH_SHORT));
 			temp = mToastRef.get();
-		} 
+		}
 		return temp;
 	}
 	
-	public static void showToast(Context context, CharSequence message){
-		try {
-			Toast temp = ensureToastInstance(context);
-			temp.setDuration(Toast.LENGTH_SHORT);
-			temp.setText(message);
-			temp.show();
-		} catch (Exception e) { }
+	private static Handler getHandler() {
+		return BaseApplication.getHandler();
 	}
 	
-	public static void showToast(Context context, int resId){
-		try {
-			Toast temp = ensureToastInstance(context);
-			temp.setDuration(Toast.LENGTH_SHORT);
-			temp.setText(resId);
-			temp.show();
-		} catch (Exception e) { }
+	private static Context getContext() {
+		return BaseApplication.getAppContext();
 	}
 	
-	public static void showToast(final Context context, Handler handler, final int resId){
-		if (AndroidUtils.isMainThread()) {
-			showToast(context, resId);
-		} else {
-			try {
-				handler.post(new Runnable() {
-					@Override
-					public void run() {
-						showToast(context, resId);
-					}
-				});
-			} catch (Exception e) { }
-		}
+	public static void showToast(final CharSequence message){
+		showToastCheckingThread(message, Toast.LENGTH_SHORT);
 	}
-
-	public static void showToast(final Context context, Handler handler, final CharSequence message){
+	
+	public static void showToast(final int resId){
+		final CharSequence message = getContext().getString(resId);
+		showToast(message);
+	}
+	
+	public static void showLongToast(CharSequence message){
+		showToastCheckingThread(message, Toast.LENGTH_LONG);
+	}
+	
+	public static void showLongToast(int resId){
+		final CharSequence message = getContext().getString(resId);
+		showLongToast(message);
+	}
+	
+	private static void showToastCheckingThread(final CharSequence message, final int length) {
 		if (AndroidUtils.isMainThread()) {
-			showToast(context, message);
+			showToast0(message, length);
 		} else {
 			try {
-				handler.post(new Runnable() {
+				getHandler().post(new Runnable() {
 					@Override
 					public void run() {
-						showToast(context, message);
+						showToast0(message, length);
 					}
 				});
 			} catch (Exception e) { }
 		}
 	}
 	
-	public static void showLongToast(Context context, int resId){
+	private static void showToast0(CharSequence message, int length){
 		try {
-			Toast temp = ensureToastInstance(context);
-			temp.setDuration(Toast.LENGTH_LONG);
-			temp.setText(resId);
-			temp.show();
-		} catch (Exception e) { }
-	}
-	
-	public static void showLongToast(Context context, CharSequence message){
-		try {
-			Toast temp = ensureToastInstance(context);
-			temp.setDuration(Toast.LENGTH_LONG);
+			Toast temp = ensureToastInstance(getContext());
+			temp.setDuration(length);
 			temp.setText(message);
 			temp.show();
 		} catch (Exception e) { }
 	}
 
-	public static void showLongToast(final Context context, Handler handler, final int resId){
-		if (AndroidUtils.isMainThread()) {
-			showLongToast(context, resId);
-		} else {
-			try {
-				handler.post(new Runnable() {
-					@Override
-					public void run() {
-						showLongToast(context, resId);
-					}
-				});
-			} catch (Exception e) { }
-		}
-	}
-
-	public static void showLongToast(final Context context, Handler handler, final CharSequence message){
-		if (AndroidUtils.isMainThread()) {
-			showLongToast(context, message);
-		} else {
-			try {
-				handler.post(new Runnable() {
-					@Override
-					public void run() {
-						showLongToast(context, message);
-					}
-				});
-			} catch (Exception e) { }
-		}
-	}
 }

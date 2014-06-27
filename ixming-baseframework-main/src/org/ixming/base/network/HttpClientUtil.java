@@ -45,6 +45,7 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
+import org.ixming.base.common.BaseApplication;
 import org.ixming.base.network.utils.NetWorkUtils;
 
 import android.content.Context;
@@ -86,11 +87,12 @@ public class HttpClientUtil {
 				httpClient = new DefaultHttpClient(ccm, params);
 			}
 			getUserAgentString();
-			httpClient = setNetWork(null, httpClient);
+			httpClient = setNetWork(BaseApplication.getAppContext(), httpClient);
 		} catch (Exception e) {
 			Log.e(TAG,
 					"HttpClientUtil   getNewHttpClient Exception "
 							+ e.getMessage());
+			e.printStackTrace();
 		}
 		return httpClient;
 	}
