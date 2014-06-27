@@ -5,7 +5,7 @@ public enum TaskState {
 	/**
 	 * prepare for running
 	 */
-	Idel,
+	Preparing,
 	
 	/**
 	 * is now running
