@@ -1,6 +1,6 @@
 package org.ixming.task4android;
 
-interface TaskThreadPoolListener {
+/*package*/ interface TaskThreadPoolListener {
 
 	void beforeExecute(Thread t, Runnable r) ;
 	

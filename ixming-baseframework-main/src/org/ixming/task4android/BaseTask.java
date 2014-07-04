@@ -1,63 +1,83 @@
 package org.ixming.task4android;
 
-public abstract class BaseTask implements Runnable {
+public abstract class BaseTask<Result> implements Runnable {
 
+	private static final String TAG = BaseTask.class.getSimpleName();
+	
 	private TaskState mState;
+	private Result mResult;
 	protected BaseTask() {
 	}
 	
 	/**
 	 * add this task to task queue, and set current state to IDEL
 	 */
-	public void addToTaskQueue() {
-		mState = TaskState.Preparing;
-		TaskQueue.execute(this);
+	public synchronized final void execute() {
+		LogUtils.i(TAG, "execute");
+		purelySetState(TaskState.Preparing);
+		TaskQueue.addTask(this);
 	}
 	
 	/**
-	 * remove this task from task queue
+	 * interrupt if not executing or try to let it interrupted during running
 	 */
-	public void removeFromTaskQueue() {
-		// set State Interrupted
-		if (checkState(null, TaskState.Preparing, TaskState.Running)) {
-			setTaskState(TaskState.Interrupted);
-		}
-		mTaskQueue.removeTask(this);
+	public final void cancel() {
+		LogUtils.i(TAG, "cancel");
+		purelySetState(TaskState.Interrupted);
+		// remove from
+		TaskQueue.removeTaskFromIdles(this);
 	}
 	
-	public synchronized void setTaskState(TaskState state) {
-		switch (state) {
-		case Preparing :
-			if (!checkState(null, TaskState.Preparing)) {
-				return ;
-			}
-			break;
-		case Running :
-			if (checkState(TaskState.Interrupted, TaskState.Finished)) {
-				return ;
-			}
-			break;
-		case Interrupted :
-			if (checkState(TaskState.Finished)) {
-				return ;
-			}
-			break;
-		case Finished:
-			if (checkState(TaskState.Interrupted)) {
-				return ;
-			}
-			break;
+	/**
+	 * check whether the task is canceled by {@link #cancel()}
+	 */
+	public final boolean isCanceled() {
+		return purelyCheckState(TaskState.Interrupted);
+	}
+	
+	@Override
+	public final void run() {
+		if (!checkCancelStateAndPost()) {
+			purelySetState(TaskState.Running);
+			mResult = doInBackground();
+			checkStateAndPostResult();
 		}
+	}
+	
+	protected abstract Result doInBackground() ;
+	
+	protected abstract void postExecuted(Result result) ;
+	
+	protected abstract void postCanceled(Result result) ;
+	
+	private synchronized boolean checkCancelStateAndPost() {
+		if (isCanceled()) {
+			TaskQueue.getHandler().postCanceledMessage(this);
+			return true;
+		}
+		return false;
+	}
+	
+	private synchronized void checkStateAndPostResult() {
+		if (!checkCancelStateAndPost()) {
+			TaskQueue.getHandler().postExecutedMessage(this);
+		}
+	}
+	
+	/*package*/ Result getExecutedResult() {
+		return mResult;
+	}
+	
+	/*package*/ synchronized void purelySetState(TaskState state) {
 		mState = state;
 	}
 	
-	public synchronized TaskState getTaskState() {
+	/*package*/ synchronized TaskState purelyGetState() {
 		return mState;
 	}
 	
-	protected boolean checkState(TaskState...targetStates) {
-		if (null == targetStates || 0 == targetStates.length) return false;
-		for (int i = 0; i < targetStates.length; i++) {
+	/*package*/ synchronized boolean purelyCheckState(TaskState...targetStates) {
+		for (int i = 0; i < (null == targetStates ? 0 : targetStates.length); i++) {
 			if (targetStates[i] == mState) {
 				return true;
 			}

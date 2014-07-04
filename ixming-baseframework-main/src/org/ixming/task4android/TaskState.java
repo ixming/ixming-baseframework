@@ -3,7 +3,7 @@ package org.ixming.task4android;
 public enum TaskState {
 
 	/**
-	 * prepare for running
+	 * prepare for running -- (IDLE)
 	 */
 	Preparing,
 	
@@ -18,7 +18,7 @@ public enum TaskState {
 	Interrupted,
 	
 	/**
-	 * already ending
+	 * already ended
 	 */
 	Finished
 	

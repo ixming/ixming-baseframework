@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.ixming.base.utils.android.FrameworkLog;
 
-class TaskThreadPool extends ThreadPoolExecutor {
+/*package*/ class TaskThreadPool extends ThreadPoolExecutor {
 	
 	private static final String TAG = TaskThreadPool.class.getSimpleName();
 	

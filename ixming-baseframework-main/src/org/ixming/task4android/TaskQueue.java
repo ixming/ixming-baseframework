@@ -2,95 +2,111 @@ package org.ixming.task4android;
 
 import java.util.LinkedList;
 
-import org.ixming.base.utils.android.FrameworkLog;
+import org.ixming.base.common.BaseApplication;
+import org.ixming.base.utils.android.AndroidUtils;
 
+/**
+ * task queue of this util
+ * 
+ * @author Yin Yong
+ *
+ */
 public class TaskQueue {
 
 	private static final String TAG = TaskQueue.class.getSimpleName();
 	
-	private static class WrappedTask implements Runnable {
-
-		private BaseTask mWrapped;
-		public WrappedTask() { }
-		
-		public WrappedTask setTask(BaseTask task) {
-			mWrapped = task;
-			return this;
-		}
-		
-		@Override
-		public void run() {
-			if (null == mWrapped) {
-				return ;
-			}
-			
-			if (mWrapped.checkState(TaskState.Preparing)) {
-				mWrapped.setTaskState(TaskState.Running);
-				mWrapped.run();
-			}
-		}
-		
-	}
-	
 	private static final Object sSyncObj = new Object();
+	// use and listen for before-execute and after-execute events
 	private static final TaskThreadPool sTaskThreadPool;
-	private static final ThreadLocal<WrappedTask> sTaskThreadLocal;
-	private static final LinkedList<BaseTask> sIdelTasks;
-	private static final LinkedList<BaseTask> sRunningTasks;
+	private static final LinkedList<Runnable> sIdleTasks;
+	private static final LinkedList<Runnable> sRunningTasks;
+	
+	private static TaskHelperHandler sHandler;
 	static {
-		sIdelTasks = new LinkedList<BaseTask>();
-		sRunningTasks = new LinkedList<BaseTask>();
+		sIdleTasks = new LinkedList<Runnable>();
+		sRunningTasks = new LinkedList<Runnable>();
 		sTaskThreadPool = new TaskThreadPool();
 		
-		sTaskThreadPool.setListener(new TaskThreadPoolListener() {
-			@Override
-			public void terminated() { }
-			
-			@Override
-			public void beforeExecute(Thread t, Runnable r) {
-				if (!(r instanceof BaseTask)) return ;
-				synchronized (sSyncObj) {
-					BaseTask task = (BaseTask) r;
-					sIdelTasks.remove(task);
-					FrameworkLog.d(TAG, "beforeExecute sIdelTasks = " + sIdelTasks.size());
-					
-					sRunningTasks.add(task);
-					task.setTaskState(TaskState.Running);
-				}
-			}
-			
-			@Override
-			public void afterExecute(Runnable r, Throwable t) {
-				if (!(r instanceof BaseTask)) return ;
-				
-				synchronized (sSyncObj) {
-					BaseTask task = (BaseTask) r;
-					sRunningTasks.remove(task);
-					task.setTaskState(TaskState.Finished);
-				}
-				
-			}
-		});
-		
-		sTaskThreadLocal = new ThreadLocal<TaskQueue.WrappedTask>() {
-			@Override
-			protected WrappedTask initialValue() {
-				return new WrappedTask();
-			}
-		};
+		sTaskThreadPool.setListener(new TaskThreadPoolListenerImpl());
 	}
 	
-	/*package*/ static void execute(BaseTask task) {
+	public static TaskHelperHandler getHandler() {
+		checkAndInitHandler();
+		return sHandler;
+	}
+	
+	private static void checkAndInitHandler() {
+		if (null != sHandler) {
+			return ;
+		}
 		synchronized (sSyncObj) {
-			sIdelTasks.add(task);
-			FrameworkLog.d(TAG, "addTask sIdelTasks = " + sIdelTasks.size());
-			sTaskThreadPool.execute(sTaskThreadLocal.get().setTask(task));
+			if (AndroidUtils.isMainThread()) {
+				sHandler = new TaskHelperHandler();
+			} else {
+				BaseApplication.getHandler().post(new Runnable() {
+					
+					@Override
+					public void run() {
+						checkAndInitHandler();
+					}
+				});
+				
+				while (null == sHandler) { }
+			}
+		}
+	}
+	
+	/**
+	 * add a task runnable into the pool, and execute it (if any thread idle) 
+	 * 
+	 * @param task
+	 */
+	public static void addTask(Runnable task) {
+		synchronized (sSyncObj) {
+			sIdleTasks.add(task);
+			LogUtils.d(TAG, "addTask sIdelTasks = " + sIdleTasks.size());
+			sTaskThreadPool.execute(task);
 		}
 	}
 
-	/*package*/ void removeTask(BaseTask task) {
+	/*package*/ static boolean removeTaskFromIdles(BaseTask<?> task) {
 		synchronized (sSyncObj) {
+			// queue is locked itself
+			if (sTaskThreadPool.getQueue().remove(task)) {
+				return sIdleTasks.remove(task);
+			}
+			return false;
 		}
 	}
 
+	private static class TaskThreadPoolListenerImpl implements TaskThreadPoolListener {
+
+		@Override
+		public void beforeExecute(Thread t, Runnable r) {
+			LogUtils.i(TAG, "beforeExecute thread name = " + Thread.currentThread().getName()
+					+ ", is main = " + AndroidUtils.isMainThread());
+			synchronized (sSyncObj) {
+				sIdleTasks.remove(r);
+				sRunningTasks.add(r);
+				LogUtils.d(TAG, "beforeExecute sIdleTasks = " + sIdleTasks.size());
+			}
+		}
+
+		@Override
+		public void afterExecute(Runnable r, Throwable t) {
+			LogUtils.i(TAG, "afterExecute thread name = " + Thread.currentThread().getName()
+					+ ", is main = " + AndroidUtils.isMainThread());
+			synchronized (sSyncObj) {
+				sRunningTasks.remove(r);
+				LogUtils.d(TAG, "afterExecute sRunningTasks = " + sRunningTasks.size());
+			}
+		}
+
+		@Override
+		public void terminated() {
+			LogUtils.i(TAG, "terminated thread name = " + Thread.currentThread().getName()
+					+ ", is main = " + AndroidUtils.isMainThread());
+		}
+		
+	}
 }

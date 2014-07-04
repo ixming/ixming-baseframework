@@ -27,7 +27,9 @@ public class BaseApplication extends Application {
 	
 	private static void checkNull(Object obj) {
 		if (null == obj) {
-			throw new RuntimeException("invoke super class's constructor first!");
+			throw new RuntimeException("check whether the app has a Application "
+					+ "class extends BaseApplication ? or forget to " 
+					+ "invoke super class's constructor first!");
 		}
 	}
 	
