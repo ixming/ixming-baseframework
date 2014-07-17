@@ -3,6 +3,12 @@ package org.ixming.base.network.json;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+/**
+ * get different Gson instance
+ * 
+ * @author Yin Yong
+ *
+ */
 public class GsonPool {
 
 	private GsonPool() { }

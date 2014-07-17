@@ -8,17 +8,14 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
@@ -27,78 +24,73 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.conn.params.ConnRoutePNames;
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.ByteArrayBody;
 import org.apache.http.entity.mime.content.StringBody;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
-import org.apache.http.params.HttpProtocolParams;
-import org.ixming.base.common.BaseApplication;
-import org.ixming.base.network.utils.NetWorkUtils;
+import org.ixming.base.network.core.DefHttpClientFactory;
+import org.ixming.base.network.core.HttpClientProxyHelper;
+import org.ixming.base.network.core.IHttpClientFactory;
+import org.ixming.base.utils.android.AndroidUtils;
 
+import android.Manifest.permission;
 import android.content.Context;
-import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
-
 public class HttpClientUtil {
-	final static String TAG = "HttpClientUtil";
-	final static int TIMEOUT = 35 * 1000;
-	private static HttpClient httpClient = null;
+	
+	private final static String TAG = "HttpClientUtil";
 	public static final int GET = 0;
 	public static final int POST = 1;
 	public static final int PUT = 2;
 	public static final int DELETE = 3;
-
-	public static HttpClient getNewHttpClient() {
-		try {
-			if (httpClient == null) {
-				KeyStore trustStore = KeyStore.getInstance(KeyStore
-						.getDefaultType());
-				trustStore.load(null, null);
-				SSLSocketFactory sf = new MySSLSocketFactory(trustStore);
-				sf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-				HttpParams params = new BasicHttpParams();
-				HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
-				HttpProtocolParams.setContentCharset(params, "UTF-8");
-				HttpProtocolParams.setUserAgent(params, getUserAgentString());
-				HttpConnectionParams.setConnectionTimeout(params, TIMEOUT);
-				HttpConnectionParams.setSoTimeout(params, TIMEOUT);
-				SchemeRegistry registry = new SchemeRegistry();
-				registry.register(new Scheme("http", PlainSocketFactory
-						.getSocketFactory(), 80));
-				registry.register(new Scheme("https", sf, 443));
-				ClientConnectionManager ccm = new ThreadSafeClientConnManager(
-						params, registry);
-				httpClient = new DefaultHttpClient(ccm, params);
-			}
-			getUserAgentString();
-			httpClient = setNetWork(BaseApplication.getAppContext(), httpClient);
-		} catch (Exception e) {
-			Log.e(TAG,
-					"HttpClientUtil   getNewHttpClient Exception "
-							+ e.getMessage());
-			e.printStackTrace();
+	
+	private static HttpClient sHttpClient = null;
+	private static final IHttpClientFactory sDefHttpClientFactory = new DefHttpClientFactory();
+	private static IHttpClientFactory sHttpClientFactory;
+	static {
+		setHttpClientFactory(sDefHttpClientFactory);
+	}
+	
+	/**
+	 * 设置自定义的IHttpClientFactory
+	 */
+	public static void setHttpClientFactory(IHttpClientFactory factory) {
+		if (null == factory || factory == sHttpClientFactory) {
+			return ;
 		}
-		return httpClient;
+		synchronized (HttpClientUtil.class) {
+			sHttpClientFactory = factory;
+			sHttpClient = null;
+			AndroidUtils.requestPermission(permission.ACCESS_NETWORK_STATE);
+			AndroidUtils.requestPermission(permission.INTERNET);
+			try {
+				sHttpClient = sHttpClientFactory.createHttpClient();
+				HttpClientProxyHelper.proxy(sHttpClient);
+			} catch (Exception e) {
+				// 1、java.lang.SecurityException: 
+				// 	content: ConnectivityService: 
+				// 	Neither user 10066 nor current process has android.permission.XXX.
+
+				Log.e(TAG, "setHttpClientFactory Exception: " + e.getMessage());
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/**
+	 * 获取当前的HttpClient
+	 */
+	public static HttpClient getHttpClient() {
+		return sHttpClient;
 	}
 
 	// TODO 获取并设置设备请求的UA
-	private static String getUserAgentString() {
+	public static String getUserAgentString() {
 		String osType = "Android";
 		String sdkVersion = android.os.Build.VERSION.RELEASE;
 		String device = android.os.Build.MODEL;
@@ -108,38 +100,10 @@ public class HttpClientUtil {
 		// Mozilla/5.0 (Linux; U; Android 4.3; en-us; HTC One - 4.3 - API 18 -
 		// 1080x1920 Build/JLS36G)
 	}
-
-	private static HttpClient setNetWork(Context context, HttpClient client) {
-		String netType = NetworkManager
-				.getNetWorkType((ConnectivityManager) context
-						.getSystemService(Context.CONNECTIVITY_SERVICE));
-		if (!NetWorkUtils.WIFI_STATE.equalsIgnoreCase(netType)) {
-			if (!NetWorkUtils.isOPhone()) {
-				Map<String, Object> map = NetworkManager.getProxy();
-				if (map != null && !map.isEmpty()) {
-					if (android.os.Build.VERSION.SDK_INT <= 7) {
-						String proxyHost = (String) map
-								.get(NetworkManager.PROXY_HOST);
-						int proxyPort = (Integer) map
-								.get(NetworkManager.PROXY_PORT);
-						HttpHost proxy = new HttpHost(proxyHost, proxyPort);
-						client.getParams().setParameter(
-								ConnRoutePNames.DEFAULT_PROXY, proxy);
-					}
-				} else {
-					// cmnet set proxy
-					client.getParams().setParameter(
-							ConnRoutePNames.DEFAULT_PROXY, null);
-				}
-			}
-
-		} else if (NetWorkUtils.WIFI_STATE.equalsIgnoreCase(netType)) {
-			client.getParams()
-					.setParameter(ConnRoutePNames.DEFAULT_PROXY, null);
-		}
-		return client;
-
-	}
+	
+//	public static Object httpRequest() {
+//		
+//	}
 
 	public static HttpRes proxyHttpGet(String url, Map<String, String> data) {
 		HttpGet httpGet = null;
@@ -147,8 +111,8 @@ public class HttpClientUtil {
 		try {
 			url = addParams(url, data);
 			httpGet = new HttpGet(url);
-			httpClient = getNewHttpClient();
-			HttpResponse response = httpClient.execute(httpGet);
+			sHttpClient = getHttpClient();
+			HttpResponse response = sHttpClient.execute(httpGet);
 			if (response != null) {
 				StatusLine line = response.getStatusLine();
 				if (line != null) {
@@ -168,8 +132,8 @@ public class HttpClientUtil {
 			e.printStackTrace();
 			res = null;
 		} finally {
-			if (httpClient != null) {
-				httpClient.getConnectionManager().closeExpiredConnections();
+			if (sHttpClient != null) {
+				sHttpClient.getConnectionManager().closeExpiredConnections();
 			}
 		}
 		return res;
@@ -183,8 +147,8 @@ public class HttpClientUtil {
 		try {
 			addParams(url, data);
 			httpDelete = new HttpDelete(url);
-			httpClient = getNewHttpClient();
-			response = httpClient.execute(httpDelete);
+			sHttpClient = getHttpClient();
+			response = sHttpClient.execute(httpDelete);
 			if (response != null) {
 				StatusLine line = response.getStatusLine();
 				if (line != null) {
@@ -203,8 +167,8 @@ public class HttpClientUtil {
 				httpDelete.abort();
 			}
 		} finally {
-			if (httpClient != null) {
-				httpClient.getConnectionManager().closeExpiredConnections();
+			if (sHttpClient != null) {
+				sHttpClient.getConnectionManager().closeExpiredConnections();
 			}
 		}
 		return res;
@@ -214,14 +178,14 @@ public class HttpClientUtil {
 		String logHeader = "url : " + url;
 		HttpPost httpPost = null;
 		HttpResponse response = null;
-		httpClient = getNewHttpClient();
+		sHttpClient = getHttpClient();
 		HttpRes res = null;
 		try {
 			httpPost = new HttpPost(url);
 			httpPost.addHeader("Accept", "application/json, */*; q=0.01");
 			httpPost.addHeader("Accept-Encoding", "gzip,deflate");
 			httpPost = addParams(httpPost, data);
-			response = httpClient.execute(httpPost);
+			response = sHttpClient.execute(httpPost);
 			if (response != null) {
 				StatusLine line = response.getStatusLine();
 				Log.i(TAG, logHeader + " proxyHttpPost StatusLine------->"
@@ -246,8 +210,8 @@ public class HttpClientUtil {
 				httpPost.abort();
 			}
 		} finally {
-			if (httpClient != null) {
-				httpClient.getConnectionManager().closeExpiredConnections();
+			if (sHttpClient != null) {
+				sHttpClient.getConnectionManager().closeExpiredConnections();
 			}
 		}
 		return res;
@@ -264,7 +228,7 @@ public class HttpClientUtil {
 		String logHeader = "proxyHttpPostFile url : " + url + " json : " + json;
 		HttpPost httpPost = null;
 		HttpResponse response = null;
-		httpClient = getNewHttpClient();
+		sHttpClient = getHttpClient();
 		HttpRes res = null;
 		try {
 			httpPost = new HttpPost(url);
@@ -315,7 +279,7 @@ public class HttpClientUtil {
 			httpPost.addHeader("Accept",
 					"application/json, image/*, */*; q=0.01");
 			httpPost.addHeader("Accept-Encoding", "gzip,deflate");
-			response = httpClient.execute(httpPost);
+			response = sHttpClient.execute(httpPost);
 			if (response != null) {
 				StatusLine line = response.getStatusLine();
 
@@ -340,8 +304,8 @@ public class HttpClientUtil {
 			if (res == null && httpPost != null) {
 				httpPost.abort();
 			}
-			if (httpClient != null) {
-				httpClient.getConnectionManager().closeExpiredConnections();
+			if (sHttpClient != null) {
+				sHttpClient.getConnectionManager().closeExpiredConnections();
 			}
 		}
 		return res;
@@ -357,7 +321,7 @@ public class HttpClientUtil {
 		}
 		HttpPut httpPut = null;
 		HttpResponse response = null;
-		httpClient = getNewHttpClient();
+		sHttpClient = getHttpClient();
 		HttpRes res = null;
 		try {
 			httpPut = new HttpPut(url);
@@ -412,7 +376,7 @@ public class HttpClientUtil {
 			httpPut.addHeader("Accept",
 					"application/json, image/*, */*; q=0.01");
 			httpPut.addHeader("Accept-Encoding", "gzip,deflate");
-			response = httpClient.execute(httpPut);
+			response = sHttpClient.execute(httpPut);
 			if (response != null) {
 				StatusLine line = response.getStatusLine();
 				if (line != null) {
@@ -434,8 +398,8 @@ public class HttpClientUtil {
 			if (res == null && httpPut != null) {
 				httpPut.abort();
 			}
-			if (httpClient != null) {
-				httpClient.getConnectionManager().closeExpiredConnections();
+			if (sHttpClient != null) {
+				sHttpClient.getConnectionManager().closeExpiredConnections();
 			}
 		}
 		return res;
@@ -532,14 +496,14 @@ public class HttpClientUtil {
 		InputStream conIn = null;
 		DataInputStream in = null;
 		OutputStream out = null;
-		httpClient = getNewHttpClient();
+		sHttpClient = getHttpClient();
 		HttpGet httpGet = null;
 		long totalSize = 0;
 		try {
 			long startTime = System.currentTimeMillis();
 			Log.i("downImage", url + " downImage start-----" + startTime);
 			httpGet = new HttpGet(url);
-			HttpResponse httpResponse = httpClient.execute(httpGet);
+			HttpResponse httpResponse = sHttpClient.execute(httpGet);
 			Log.i("downImage", url + " downloadImageFile httpResponse --->"
 					+ httpResponse);
 			if (httpResponse != null) {
@@ -630,8 +594,8 @@ public class HttpClientUtil {
 					httpGet.abort();
 					httpGet = null;
 				}
-				if (httpClient != null) {
-					httpClient.getConnectionManager().closeExpiredConnections();
+				if (sHttpClient != null) {
+					sHttpClient.getConnectionManager().closeExpiredConnections();
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -645,11 +609,11 @@ public class HttpClientUtil {
 		InputStream conIn = null;
 		DataInputStream in = null;
 		OutputStream out = null;
-		httpClient = getNewHttpClient();
+		sHttpClient = getHttpClient();
 		HttpGet httpGet = null;
 		try {
 			httpGet = new HttpGet(url);
-			HttpResponse httpResponse = httpClient.execute(httpGet);
+			HttpResponse httpResponse = sHttpClient.execute(httpGet);
 			int responseCode = httpResponse.getStatusLine().getStatusCode();
 			if (responseCode == HttpStatus.SC_OK) {
 				entity = httpResponse.getEntity();
@@ -695,8 +659,8 @@ public class HttpClientUtil {
 				if (httpGet != null) {
 					httpGet.abort();
 				}
-				if (httpClient != null) {
-					httpClient.getConnectionManager().closeExpiredConnections();
+				if (sHttpClient != null) {
+					sHttpClient.getConnectionManager().closeExpiredConnections();
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -717,11 +681,11 @@ public class HttpClientUtil {
 		InputStream conIn = null;
 		DataInputStream in = null;
 		OutputStream out = null;
-		httpClient = getNewHttpClient();
+		sHttpClient = getHttpClient();
 		HttpGet httpGet = null;
 		try {
 			httpGet = new HttpGet(url);
-			HttpResponse httpResponse = httpClient.execute(httpGet);
+			HttpResponse httpResponse = sHttpClient.execute(httpGet);
 			int responseCode = httpResponse.getStatusLine().getStatusCode();
 			if (responseCode == HttpStatus.SC_OK) {
 				entity = httpResponse.getEntity();
@@ -770,8 +734,8 @@ public class HttpClientUtil {
 				if (httpGet != null) {
 					httpGet.abort();
 				}
-				if (httpClient != null) {
-					httpClient.getConnectionManager().closeExpiredConnections();
+				if (sHttpClient != null) {
+					sHttpClient.getConnectionManager().closeExpiredConnections();
 				}
 			} catch (Exception e) {
 				e.printStackTrace();

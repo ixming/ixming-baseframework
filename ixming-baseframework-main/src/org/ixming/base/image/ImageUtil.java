@@ -82,7 +82,6 @@ public class ImageUtil {
 	
 	void checkShouldIncrement(UrlImageCacheToken token) {
 		synchronized (mSyncToken) {
-			poll();
 			if (null == mCurrentUIToken) {
 				return ;
 			}
@@ -144,7 +143,8 @@ public class ImageUtil {
 	 * 如果Bitmap引用已经被回收，则从所有持有该引用的Activity的UrlImageCacheToken列表中移除
 	 */
     static void poll() {
-    	System.gc();
+    	// 耗时操作，会导致图片刷新到界面时卡顿
+    	// System.gc(); 
     	synchronized (mSyncToken) {
     		UrlImageCacheToken token;
     		while ((token = (UrlImageCacheToken) sRefQueue.poll()) != null) {
@@ -160,14 +160,14 @@ public class ImageUtil {
 	static {
 		synchronized (mSyncToken) {
 			// 以KB为单位
-			int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+			int maxMemory = (int) (Runtime.getRuntime().maxMemory());
 			int cacheSize = maxMemory / 2;
 			
 			sImageCache = new LruCache<String, UrlImageCacheToken>(cacheSize) {
 				
 				@Override
 				protected int sizeOf(String key, UrlImageCacheToken value) {
-					return value.getByteCount() / 1024;
+					return value.getByteCount();
 				}
 				
 				@Override
@@ -234,7 +234,6 @@ public class ImageUtil {
 			if (TextUtils.isEmpty(key)) {
 				return null;
 			}
-			poll();
 			UrlImageCacheToken token = sImageCache.get(key);
 			return token;
 		}

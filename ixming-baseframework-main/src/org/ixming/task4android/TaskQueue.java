@@ -1,7 +1,5 @@
 package org.ixming.task4android;
 
-import java.util.LinkedList;
-
 import org.ixming.base.common.BaseApplication;
 import org.ixming.base.utils.android.AndroidUtils;
 
@@ -15,19 +13,16 @@ public class TaskQueue {
 
 	private static final String TAG = TaskQueue.class.getSimpleName();
 	
-	private static final Object sSyncObj = new Object();
-	// use and listen for before-execute and after-execute events
-	private static final TaskThreadPool sTaskThreadPool;
-	private static final LinkedList<Runnable> sIdleTasks;
-	private static final LinkedList<Runnable> sRunningTasks;
+	// sync token for Pool
+	static final Object sPoolSync = new Object();
 	
+	// use and listen for before-execute and after-execute events
+	static final TaskThreadPool sTaskThreadPool;
 	private static TaskHelperHandler sHandler;
 	static {
-		sIdleTasks = new LinkedList<Runnable>();
-		sRunningTasks = new LinkedList<Runnable>();
 		sTaskThreadPool = new TaskThreadPool();
 		
-		sTaskThreadPool.setListener(new TaskThreadPoolListenerImpl());
+		sTaskThreadPool.setTaskThreadPoolListener(new TaskThreadPoolListenerImpl());
 	}
 	
 	public static TaskHelperHandler getHandler() {
@@ -39,7 +34,7 @@ public class TaskQueue {
 		if (null != sHandler) {
 			return ;
 		}
-		synchronized (sSyncObj) {
+		synchronized (sPoolSync) {
 			if (AndroidUtils.isMainThread()) {
 				sHandler = new TaskHelperHandler();
 			} else {
@@ -62,18 +57,16 @@ public class TaskQueue {
 	 * @param task
 	 */
 	public static void addTask(Runnable task) {
-		synchronized (sSyncObj) {
-			sIdleTasks.add(task);
-			LogUtils.d(TAG, "addTask sIdelTasks = " + sIdleTasks.size());
+		synchronized (sPoolSync) {
 			sTaskThreadPool.execute(task);
 		}
 	}
 
-	/*package*/ static boolean removeTaskFromIdles(BaseTask<?> task) {
-		synchronized (sSyncObj) {
+	public static boolean removeTaskFromIdles(Runnable task) {
+		synchronized (sPoolSync) {
 			// queue is locked itself
 			if (sTaskThreadPool.getQueue().remove(task)) {
-				return sIdleTasks.remove(task);
+				return true;
 			}
 			return false;
 		}
@@ -83,30 +76,17 @@ public class TaskQueue {
 
 		@Override
 		public void beforeExecute(Thread t, Runnable r) {
-			LogUtils.i(TAG, "beforeExecute thread name = " + Thread.currentThread().getName()
-					+ ", is main = " + AndroidUtils.isMainThread());
-			synchronized (sSyncObj) {
-				sIdleTasks.remove(r);
-				sRunningTasks.add(r);
-				LogUtils.d(TAG, "beforeExecute sIdleTasks = " + sIdleTasks.size());
-			}
+			LogUtils.i(TAG, "beforeExecute thread name = " + Thread.currentThread().getName());
 		}
 
 		@Override
 		public void afterExecute(Runnable r, Throwable t) {
-			LogUtils.i(TAG, "afterExecute thread name = " + Thread.currentThread().getName()
-					+ ", is main = " + AndroidUtils.isMainThread());
-			synchronized (sSyncObj) {
-				sRunningTasks.remove(r);
-				LogUtils.d(TAG, "afterExecute sRunningTasks = " + sRunningTasks.size());
-			}
+			LogUtils.i(TAG, "afterExecute thread name = " + Thread.currentThread().getName());
 		}
 
 		@Override
 		public void terminated() {
-			LogUtils.i(TAG, "terminated thread name = " + Thread.currentThread().getName()
-					+ ", is main = " + AndroidUtils.isMainThread());
+			LogUtils.i(TAG, "terminated thread name = " + Thread.currentThread().getName());
 		}
-		
 	}
 }

@@ -15,9 +15,9 @@ public class ObjectUtils {
 		return null == obj;
 	}
 	
-	public static void checkNullAndThrow(Object obj) {
+	public static void checkNullAndThrow(Object obj, String tag) {
 		if (checkNull(obj)) {
-			throw new NullPointerException("obj is null");
+			throw new NullPointerException(tag + " is null");
 		}
 	}
 	

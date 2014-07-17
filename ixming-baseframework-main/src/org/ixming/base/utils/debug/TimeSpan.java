@@ -33,11 +33,12 @@ public class TimeSpan {
 	 */
 	public static long endTime(String tag) {
 		synchronized (TIME_TAGS) {
-			long startP = 0;
+			long endTime = System.currentTimeMillis();
+			long startPr = 0;
 			Long start = TIME_TAGS.get(tag);
 			if (null != start) {
-				startP = start.longValue();
-				return System.currentTimeMillis() - startP;
+				startPr = start.longValue();
+				return endTime - startPr;
 			} else {
 				return 0L;
 			}

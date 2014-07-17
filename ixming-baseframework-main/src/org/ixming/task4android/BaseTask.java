@@ -1,18 +1,25 @@
 package org.ixming.task4android;
 
-public abstract class BaseTask<Result> implements Runnable {
+/**
+ * 所有Task的基类，封装了加入任务队列的操作和处理过程、结果。
+ * 
+ * 
+ * @author Yin Yong
+ *
+ */
+public abstract class BaseTask implements Runnable {
 
 	private static final String TAG = BaseTask.class.getSimpleName();
 	
 	private TaskState mState;
-	private Result mResult;
+	private Object[] mCancelToken;
 	protected BaseTask() {
 	}
 	
 	/**
 	 * add this task to task queue, and set current state to IDEL
 	 */
-	public synchronized final void execute() {
+	public final void execute() {
 		LogUtils.i(TAG, "execute");
 		purelySetState(TaskState.Preparing);
 		TaskQueue.addTask(this);
@@ -20,10 +27,13 @@ public abstract class BaseTask<Result> implements Runnable {
 	
 	/**
 	 * interrupt if not executing or try to let it interrupted during running
+	 * 
+	 * @param cancelToken 附加的cancel信息，将在{@link #postCanceled(Object...)}调用时传递 
 	 */
-	public final void cancel() {
+	public final void cancel(Object...cancelToken) {
 		LogUtils.i(TAG, "cancel");
 		purelySetState(TaskState.Interrupted);
+		mCancelToken = cancelToken;
 		// remove from
 		TaskQueue.removeTaskFromIdles(this);
 	}
@@ -37,18 +47,17 @@ public abstract class BaseTask<Result> implements Runnable {
 	
 	@Override
 	public final void run() {
-		if (!checkCancelStateAndPost()) {
-			purelySetState(TaskState.Running);
-			mResult = doInBackground();
+		if (!checkCancelStateAndPostOrSet(TaskState.Running)) {
+			doInBackground();
 			checkStateAndPostResult();
 		}
 	}
 	
-	protected abstract Result doInBackground() ;
+	protected abstract void doInBackground() ;
 	
-	protected abstract void postExecuted(Result result) ;
+	protected abstract void postExecuted() ;
 	
-	protected abstract void postCanceled(Result result) ;
+	protected abstract void postCanceled(Object...cancelToken) ;
 	
 	private synchronized boolean checkCancelStateAndPost() {
 		if (isCanceled()) {
@@ -58,14 +67,18 @@ public abstract class BaseTask<Result> implements Runnable {
 		return false;
 	}
 	
-	private synchronized void checkStateAndPostResult() {
-		if (!checkCancelStateAndPost()) {
-			TaskQueue.getHandler().postExecutedMessage(this);
+	private synchronized boolean checkCancelStateAndPostOrSet(TaskState newState) {
+		if (checkCancelStateAndPost()) {
+			return true;
 		}
+		purelySetState(newState);
+		return false;
 	}
 	
-	/*package*/ Result getExecutedResult() {
-		return mResult;
+	private synchronized void checkStateAndPostResult() {
+		if (!checkCancelStateAndPostOrSet(TaskState.Finished)) {
+			TaskQueue.getHandler().postExecutedMessage(this);
+		}
 	}
 	
 	/*package*/ synchronized void purelySetState(TaskState state) {
@@ -83,6 +96,10 @@ public abstract class BaseTask<Result> implements Runnable {
 			}
 		}
 		return false;
+	}
+	
+	Object[] getCancelToken() {
+		return mCancelToken;
 	}
 	
 	public Object getTaskToken() {
