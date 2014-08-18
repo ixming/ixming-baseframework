@@ -1,5 +1,7 @@
 package org.ixming.task4android;
 
+import org.ixming.base.utils.android.FrameworkLog;
+
 import android.os.Handler;
 import android.os.Message;
 
@@ -13,26 +15,35 @@ import android.os.Message;
  */
 public class TaskHelperHandler extends Handler {
 
+	private static final String TAG = TaskHelperHandler.class.getSimpleName();
+	
+	
 	public static final int MSG_POST_EXECUTED = 0x1;
 	public static final int MSG_POST_CANCELED = 0x2;
 	
 	/*package*/ TaskHelperHandler() { }
 	
+	private int mExecutedCount = 0;
+	private int mCancelCount = 0;
 	@Override
 	public final void handleMessage(Message msg) {
 		switch (msg.what) {
 			case MSG_POST_EXECUTED: {
+				mExecutedCount ++;
 				BaseTask task = (BaseTask) msg.obj;
 				task.postExecuted();
 				break;
 			}
 			case MSG_POST_CANCELED: {
+				mCancelCount ++;
 				BaseTask task = (BaseTask) msg.obj;
 				task.postCanceled(task.getCancelToken());
 				break;
 			}
 		}
-		msg.recycle();
+		FrameworkLog.i(TAG, "mExecutedCount = " + mExecutedCount
+				+ ", mCancelCount = " + mCancelCount);
+		// msg.recycle();
 	}
 	
 	public void postExecutedMessage(BaseTask task) {

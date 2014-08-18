@@ -13,11 +13,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.ixming.base.file.FileCompositor;
 import org.ixming.base.file.FileManager;
 import org.ixming.base.file.app.LocalFileUtility;
 import org.ixming.base.network.HttpClientUtil;
-import org.ixming.base.network.HttpRes;
+import org.ixming.base.network.simple.BasicXMRequest;
 import org.ixming.base.secure.encode.Base64;
 import org.ixming.base.utils.android.LogUtils;
 
@@ -263,10 +265,13 @@ private static final String TAG = WebViewCache.class.getSimpleName();
 	private boolean requestUrlFile(String url,
 			FileCompositor fileCompositor) throws Exception {
 		boolean flag = false;
-		HttpRes httpRes = null;
+		HttpUriRequest request = null;
+		HttpResponse response = null;
+		HttpEntity entity = null;
 		try {
-			httpRes = HttpClientUtil.proxyHttpGet(url, null);
-			HttpEntity entity = httpRes.getEntity();
+			request = BasicXMRequest.get(url, null).create();
+			response = HttpClientUtil.getHttpClient().execute(request);
+			entity = response.getEntity();
 			if (fileCompositor.createNewFile()) {
 				String contentType = null;
 				try {
@@ -327,8 +332,15 @@ private static final String TAG = WebViewCache.class.getSimpleName();
 			e.printStackTrace();
 			throw e;
 		} finally {
-			if (null != httpRes) {
-				httpRes.abort();
+			if (null != request) {
+				try {
+					request.abort();
+				} catch (Exception ignore) { }
+			}
+			if (null != entity) {
+				try {
+					entity.consumeContent();
+				} catch (Exception ignore) { }
 			}
 			if (!flag) {
 				fileCompositor.deleteFile(true);

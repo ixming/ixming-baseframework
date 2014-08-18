@@ -51,11 +51,11 @@ public class DownloadFileTask extends BaseTask {
 		/**
 		 * 美妆1.0 特别处理 过滤html 该判断在非唯美妆应用可以删除
 		 */
-		if (".html".equals(bean.getSuffix())) {
-			HttpClientUtil.downloadHtmlFile(bean.getUrl(), file);
-		} else {
-			HttpClientUtil.downloadFile(bean.getUrl(), file);
-		}
+//		if (".html".equals(bean.getSuffix())) {
+//			HttpClientUtil.downloadHtmlFile(bean.getUrl(), file);
+//		} else {
+//			HttpClientUtil.downloadFile(bean.getUrl(), file);
+//		}
 
 	}
 }

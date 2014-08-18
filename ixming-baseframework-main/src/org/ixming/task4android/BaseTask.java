@@ -59,7 +59,7 @@ public abstract class BaseTask implements Runnable {
 	
 	protected abstract void postCanceled(Object...cancelToken) ;
 	
-	private synchronized boolean checkCancelStateAndPost() {
+	protected synchronized boolean checkCancelStateAndPost() {
 		if (isCanceled()) {
 			TaskQueue.getHandler().postCanceledMessage(this);
 			return true;
@@ -67,7 +67,7 @@ public abstract class BaseTask implements Runnable {
 		return false;
 	}
 	
-	private synchronized boolean checkCancelStateAndPostOrSet(TaskState newState) {
+	protected synchronized boolean checkCancelStateAndPostOrSet(TaskState newState) {
 		if (checkCancelStateAndPost()) {
 			return true;
 		}
@@ -75,7 +75,7 @@ public abstract class BaseTask implements Runnable {
 		return false;
 	}
 	
-	private synchronized void checkStateAndPostResult() {
+	protected synchronized void checkStateAndPostResult() {
 		if (!checkCancelStateAndPostOrSet(TaskState.Finished)) {
 			TaskQueue.getHandler().postExecutedMessage(this);
 		}

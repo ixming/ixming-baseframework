@@ -76,6 +76,9 @@ public class AjaxStatus {
 	private Header[] headers;
 	private Closeable close;
 	
+	// added by Yin Yong
+	private Object exceptionToken;
+	
 	public AjaxStatus(){		
 	}
 	
@@ -136,6 +139,11 @@ public class AjaxStatus {
 	
 	protected AjaxStatus headers(Header[] headers){
 		this.headers = headers;
+		return this;
+	}
+	
+	protected AjaxStatus exceptionToken(Object exceptionToken) {
+		this.exceptionToken = exceptionToken;
 		return this;
 	}
 	
@@ -351,6 +359,10 @@ public class AjaxStatus {
 		}
 		
 		return null;
+	}
+	
+	public Object getExceptionToken() {
+		return exceptionToken;
 	}
 	
 }

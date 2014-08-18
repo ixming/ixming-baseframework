@@ -3,6 +3,8 @@ package org.ixming.base.file;
 import java.io.File;
 import java.util.Set;
 
+import org.ixming.base.common.BaseApplication;
+
 import android.content.Context;
 import android.os.Environment;
 import android.os.StatFs;
@@ -49,8 +51,8 @@ public abstract class FileManager {
 	 * @param defType 设置默认的存储类型
 	 * @see {@link StorageType}
 	 */
-	public static void initAppConfig(Context context, StorageType defType) {
-		sApplicationContext = context.getApplicationContext();
+	public static void initAppConfig(StorageType defType) {
+		sApplicationContext = BaseApplication.getAppContext();
 		getAppFileManager();
 		if (null != defType) {
 			sPreferredStorageType = defType;

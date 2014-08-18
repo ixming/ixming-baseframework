@@ -1,7 +1,5 @@
 package org.ixming.base.network.state;
 
-import org.ixming.base.network.HttpResult;
-
 /**
  * 模糊的响应类型
  * 
@@ -12,10 +10,8 @@ public enum BlurryReponseCode {
 	
 	/**
 	 * connect failure or other error during requesting
-	 * 
-	 * @see {@link HttpResult}
 	 */
-	BeforeConnection,
+	Other,
 	
 	/**
 	 * connect successfully to Server, and status code is 200
@@ -35,6 +31,6 @@ public enum BlurryReponseCode {
 	/**
 	 * connect successfully to Server, and status code is 5xx
 	 */
-	ServerError;
+	ServerError,
 	
 }

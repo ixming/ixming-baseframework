@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.ixming.base.utils.debug.DummyComparator;
 
-class ThreadPoolWrapper extends AbstractQueue<Runnable>
+class BlockingQueueWrapper extends AbstractQueue<Runnable>
 implements BlockingQueue<Runnable> {
 
 	private static final Comparator<? super Runnable> sDefComparator = new DummyComparator<Runnable>();
@@ -27,7 +27,7 @@ implements BlockingQueue<Runnable> {
 	// default 
 	private BlockingQueue<Runnable> mQueue = mDefQueue;
 	
-	public ThreadPoolWrapper() {
+	public BlockingQueueWrapper() {
 	}
 	
 	/**

@@ -1171,7 +1171,7 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 		}catch(IOException e){
 		
 		    AQUtility.debug("IOException");
-		    
+		    status.exceptionToken(e);
 		    //work around for IOException when 401 is returned
 		    //reference: http://stackoverflow.com/questions/11735636/how-to-get-401-response-without-handling-it-using-try-catch-in-android
 		    String message = e.getMessage();
@@ -1183,6 +1183,7 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 		
 		}catch(Exception e){
 			AQUtility.debug(e);
+			status.exceptionToken(e);
 			status.code(AjaxStatus.NETWORK_ERROR).message("network error");
 		}
 		
@@ -1191,6 +1192,7 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 			result = transform(url, data, status);
 		}catch(Exception e){
 			AQUtility.debug(e);
+			status.exceptionToken(e);
 		}
 		
 		if(result == null && data != null){

@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 	private static final int KEEP_ALIVE = 15;// 空闲线程的超时时间为15秒(unit Second)
 	
 	private static final ThreadFactory sThreadFactory;
-	private static final ThreadPoolWrapper sPoolWorkQueue;
+	private static final BlockingQueueWrapper sPoolWorkQueue;
 	static {
 		synchronized (TaskQueue.sPoolSync) {
 			sThreadFactory = new ThreadFactory() {
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 				}
 			};
 			
-			sPoolWorkQueue = new ThreadPoolWrapper();
+			sPoolWorkQueue = new BlockingQueueWrapper();
 		}
 	}
 	
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 		mListener = l;
 	}
 	
-	ThreadPoolWrapper getMyBlockingQueue() {
+	BlockingQueueWrapper getMyBlockingQueue() {
 		return sPoolWorkQueue;
 	}
 	

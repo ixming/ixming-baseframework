@@ -13,7 +13,7 @@ import org.ixming.inject4android.annotation.ViewInject;
  * @author Yin Yong
  *
  */
-public interface IInterfaces extends IViewInjector, IResInjector, IOnClickListenerInjector { }
+interface IInterfaces extends IViewInjector, IResInjector, IOnClickListenerInjector { }
 
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>

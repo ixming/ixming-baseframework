@@ -1,9 +1,10 @@
-package org.ixming.base.network;
+package org.ixming.base.network.core;
 
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.ixming.base.network.HttpMethod;
 
 /**
  * 
@@ -12,7 +13,7 @@ import org.apache.http.client.methods.HttpUriRequest;
  * @author Yin Yong
  *
  */
-public interface IXMRequestBuilder {
+public interface IXMRequestBuilder extends IXMRequestParams {
 	
 	IXMRequestBuilder method(HttpMethod method);
 	IXMRequestBuilder url(String url);

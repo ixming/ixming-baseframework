@@ -1,9 +1,10 @@
-package org.ixming.base.network;
+package org.ixming.base.network.core;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
+import org.ixming.base.network.HttpMethod;
 
 public abstract class BaseXMRequest implements IXMRequest {
 

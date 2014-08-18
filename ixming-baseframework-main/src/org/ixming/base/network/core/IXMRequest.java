@@ -1,8 +1,9 @@
-package org.ixming.base.network;
+package org.ixming.base.network.core;
 
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
+import org.ixming.base.network.HttpMethod;
 
 public interface IXMRequest extends IXMRequestBuilder {
 
@@ -14,5 +15,4 @@ public interface IXMRequest extends IXMRequestBuilder {
 	IXMRequest params(Map<String, String> params);
 	IXMRequest entity(HttpEntity entity);
 	
-	HttpResult execute();
 }

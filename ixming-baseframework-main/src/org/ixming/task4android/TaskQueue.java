@@ -3,6 +3,8 @@ package org.ixming.task4android;
 import org.ixming.base.common.BaseApplication;
 import org.ixming.base.utils.android.AndroidUtils;
 
+import android.util.Log;
+
 /**
  * task queue of this util
  * 
@@ -34,20 +36,20 @@ public class TaskQueue {
 		if (null != sHandler) {
 			return ;
 		}
-		synchronized (sPoolSync) {
-			if (AndroidUtils.isMainThread()) {
-				sHandler = new TaskHelperHandler();
-			} else {
-				BaseApplication.getHandler().post(new Runnable() {
-					
-					@Override
-					public void run() {
-						checkAndInitHandler();
-					}
-				});
-				
-				while (null == sHandler) { }
+		if (AndroidUtils.isMainThread()) {
+			sHandler = new TaskHelperHandler();
+			return ;
+		}
+		BaseApplication.getHandler().post(new Runnable() {
+			
+			@Override
+			public void run() {
+				checkAndInitHandler();
 			}
+		});
+		
+		while (null == sHandler) { 
+			Log.d(TAG, "2");
 		}
 	}
 	
