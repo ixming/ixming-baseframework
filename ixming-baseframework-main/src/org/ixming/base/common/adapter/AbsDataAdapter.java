@@ -203,7 +203,10 @@ implements AdapterChangeable<D>{
 		ensureNotFinalized();
 		return Collections.unmodifiableList(mContentList);
 	}
-	
+
+	/**
+	 * @return the raw data list
+	 */
 	protected final List<D> getContentList() {
 		ensureNotFinalized();
 		return mContentList;
@@ -227,6 +230,20 @@ implements AdapterChangeable<D>{
 		if (null != t) {
 			final int oldCount = getCount();
 			mContentList.add(t);
+			final int newCount = getCount();
+			postDataSetChanged(oldCount, newCount);
+		}
+		return this;
+	}
+	
+	@Override
+	public final AbsDataAdapter<D, H> appendData(D...arr) {
+		ensureNotFinalized();
+		if (null != arr && arr.length > 0) {
+			final int oldCount = getCount();
+			for (int i = 0; i < arr.length; i++) {
+				mContentList.add(arr[i]);
+			}
 			final int newCount = getCount();
 			postDataSetChanged(oldCount, newCount);
 		}
@@ -288,7 +305,8 @@ implements AdapterChangeable<D>{
 		return this;
 	}
 	
-	public AbsDataAdapter<D, H> update(int position, D t) {
+	@Override
+	public final AbsDataAdapter<D, H> update(int position, D t) {
 		ensureNotFinalized();
 		if (position > -1 && position < getCount()) {
 			final int oldCount = getCount();

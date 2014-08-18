@@ -27,6 +27,12 @@ interface AdapterChangeable<T> {
 	AdapterChangeable<T> appendData(T t);
 	
 	/**
+	 * append an array of items to the AdapterView, and then call notifyDataSetChanged
+	 * @param arr new data to append
+	 */
+	AdapterChangeable<T> appendData(T...arr);
+	
+	/**
 	 * append a collection of data to the AdapterView, and then call notifyDataSetChanged
 	 * @param c new data to append
 	 */
